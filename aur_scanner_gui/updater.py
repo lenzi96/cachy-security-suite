@@ -76,6 +76,9 @@ class UpdateInfo:
         return count
 
 
+DEFAULT_GITHUB_REPO = "lenzi96/cachy-security-suite"
+
+
 def get_github_repo() -> Optional[str]:
     """Retrieves configured or git-detected GitHub repository (e.g. 'owner/repo')."""
     settings = QSettings("CachySecurity", "CachySecuritySuite")
@@ -99,7 +102,7 @@ def get_github_repo() -> Optional[str]:
                 return repo[:-4] if repo.endswith(".git") else repo
     except Exception:
         pass
-    return None
+    return DEFAULT_GITHUB_REPO
 
 
 def set_github_repo(repo_str: str) -> None:
