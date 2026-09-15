@@ -2,6 +2,30 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.2.0] - 2026-09-15
+
+### 🛡️ Integrierte Firewall-Steuerung & Netzwerkschutz
+- **Vollständige Linux-Paketfilter-Steuerung (UFW / Netfilter):**
+  - **Zustands- & Engine-Banner:** Visuelle Statusanzeige (🟢 Aktiv & Geschützt / 🔴 Deaktiviert) mit 1-Klick-Toggle-Button.
+  - **Passives Lesen ohne Root:** Status, Standard-Richtlinien (DROP / ACCEPT) und bestehende Regeln werden blitzschnell und ohne Passwortabfrage aus `/etc/ufw/` ausgelesen.
+  - **Sicherheitsprofile mit 1 Klick:**
+    - 🏠 *Heimnetzwerk (Standard):* Eingehend blockieren (DROP), Ausgehend erlauben (ACCEPT).
+    - ☕ *Öffentliches WLAN (Strikt):* Eingehend blockieren, Ausgehend erlauben, striktes Logging.
+    - 🔒 *Sicherheits-Lockdown:* Notfall-Modus zur vollständigen Netzwerk-Isolierung.
+- **Interaktive Regel-Verwaltung:**
+  - Übersichtliche Tabelle aller aktiven Portfreigaben und Sperren (Aktion, Richtung, Port, Protokoll, Quelle, IPv4/IPv6, Kommentar).
+  - **Neuer Regel-Dialog (`AddRuleDialog`):**
+    - Vordefinierte Vorlagen für gängige Dienste (SSH, KDE Connect, Web HTTP/HTTPS, Samba, Steam/Gaming, WireGuard VPN, LocalSend, DNS).
+    - Freie Konfiguration von Portbereichen, Protokollen (TCP, UDP, ANY), Richtung (In/Out) und Quell-IPs.
+  - **1-Klick-Löschen:** Selektierte Firewall-Regeln bequem mit Sicherheitsabfrage entfernen.
+- **Echtzeit-Blockprotokoll:**
+  - Live-Anzeige der letzten vom Paketfilter abgewiesenen Verbindungsversuche (`[UFW BLOCK]`) direkt aus dem System-Journal.
+- **Integration:**
+  - Neuer Menüpunkt **„Firewall“** in der linken Sidebar der Cachy Security Suite.
+  - Dynamischer Versions-Badge `SUITE v1.2.0` in der Kopfleiste.
+
+---
+
 ## [1.1.5] - 2026-09-15
 
 ### 🎨 GUI Modernisierung & Feinschliff

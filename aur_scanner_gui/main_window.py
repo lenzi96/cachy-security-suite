@@ -21,8 +21,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+import aur_scanner_gui
 from aur_scanner_gui.scanner_service import AurScannerService
 from aur_scanner_gui.views.antivirus_view import AntivirusView
+from aur_scanner_gui.views.firewall_view import FirewallView
 from aur_scanner_gui.views.ioc_view import IOCView
 from aur_scanner_gui.views.local_scan_view import LocalScanView
 from aur_scanner_gui.views.pre_install_view import PreInstallView
@@ -116,7 +118,7 @@ class MainWindow(QMainWindow):
 
         title_lbl = QLabel("Cachy Security")
         title_lbl.setStyleSheet("font-size: 16px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;")
-        sub_lbl = QLabel("SUITE v1.1.5")
+        sub_lbl = QLabel(f"SUITE v{aur_scanner_gui.__version__}")
         sub_lbl.setStyleSheet("""
             font-size: 9px;
             color: #38bdf8;
@@ -156,8 +158,9 @@ class MainWindow(QMainWindow):
             ("PKGBUILD Scan", "system-search", 1),
             ("Vorab-Prüfung", "security-high", 2),
             ("Virenscanner", "security-medium", 3),
-            ("Regel-Katalog", "dialog-information", 4),
-            ("IOC-Datenbank", "security-low", 5),
+            ("Firewall", "network-wired", 4),
+            ("Regel-Katalog", "dialog-information", 5),
+            ("IOC-Datenbank", "security-low", 6),
         ]
 
         for text, icon_name, idx in nav_items:
@@ -263,6 +266,7 @@ class MainWindow(QMainWindow):
         self.pre_install_view.request_local_scan.connect(self.open_in_local_scan)
         self.pre_install_view.request_antivirus_scan.connect(self.open_in_antivirus)
         self.antivirus_view = AntivirusView()
+        self.firewall_view = FirewallView()
         self.rules_view = RulesView()
         self.ioc_view = IOCView()
 
@@ -270,8 +274,9 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.local_scan_view)     # 1
         self.stack.addWidget(self.pre_install_view)    # 2
         self.stack.addWidget(self.antivirus_view)      # 3
-        self.stack.addWidget(self.rules_view)          # 4
-        self.stack.addWidget(self.ioc_view)            # 5
+        self.stack.addWidget(self.firewall_view)       # 4
+        self.stack.addWidget(self.rules_view)          # 5
+        self.stack.addWidget(self.ioc_view)            # 6
 
         root_layout.addWidget(self.stack)
 
@@ -302,7 +307,7 @@ class MainWindow(QMainWindow):
         self.system_scan_view.start_system_scan()
 
     def switch_to_rule(self, code: str):
-        self.switch_view(4)
+        self.switch_view(5)
         self.rules_view.select_rule_by_code(code)
 
     def open_in_local_scan(self, path: str):
