@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Cachy Security Suite Setup
+Comment=Graphical Installer for Cachy Security Suite
+Exec=bash setup
+Icon=system-software-install
+Terminal=false
+Type=Application
+Categories=System;Security;
+StartupNotify=true

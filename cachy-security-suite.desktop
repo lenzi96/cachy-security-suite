@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Cachy Security Suite
+Comment=Security and audit suite for Arch Linux & CachyOS
+GenericName=Security Suite
+Exec=/run/media/julian/HDD/Linux/aur-scanner-gui/cachy-security-suite
+Icon=/run/media/julian/HDD/Linux/aur-scanner-gui/resources/aur-scanner-256.png
+Terminal=false
+Type=Application
+Categories=System;Security;Utility;
+Keywords=cachy;cachyos;security;scanner;aur;clamav;antivirus;arch;pkgbuild;pacman;
+StartupNotify=true
+StartupWMClass=cachy-security-suite

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1793d1"/>
+      <stop offset="100%" stop-color="#0f52ba"/>
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Shield -->
+  <path d="M 64 12 
+           C 88 12 110 22 110 22
+           C 110 70 88 102 64 116
+           C 40 102 18 70 18 22
+           C 18 22 40 12 64 12 Z" 
+        fill="url(#shieldGrad)" 
+        stroke="#0d47a1" 
+        stroke-width="3"
+        filter="url(#shadow)" />
+
+  <!-- Inner highlight -->
+  <path d="M 64 20 
+           C 84 20 102 28 102 28
+           C 102 66 84 94 64 106
+           C 44 94 26 66 26 28
+           C 26 28 44 20 64 20 Z" 
+        fill="url(#innerGrad)" />
+
+  <!-- Arch Linux A Silhouette Style -->
+  <path d="M 64 34
+           L 84 76
+           L 74 76
+           L 69 66
+           L 59 66
+           L 54 76
+           L 44 76 Z
+           M 64 48
+           L 61 58
+           L 67 58 Z"
+        fill="#ffffff" 
+        opacity="0.9" />
+
+  <!-- Scanner Check/Crosshairs Accent -->
+  <circle cx="86" cy="86" r="20" fill="#10b981" stroke="#ffffff" stroke-width="3" filter="url(#shadow)"/>
+  <path d="M 78 86 L 83 91 L 95 79" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

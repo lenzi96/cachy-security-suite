@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Double-clickable Setup Launcher for Graphical Installer
+# ==============================================================================
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "$DIR/installer.py" "$@"

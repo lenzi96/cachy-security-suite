@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cachy-security-suite"
+version = "1.1.0"
+description = "Modern PyQt6 graphical security & audit suite for Arch Linux & CachyOS"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Julian" }
+]
+dependencies = [
+    "PyQt6>=6.0.0"
+]
+
+[project.scripts]
+cachy-security-suite = "aur_scanner_gui.app:main"
+aur-scanner-gui = "aur_scanner_gui.app:main"
