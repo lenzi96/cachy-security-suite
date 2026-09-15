@@ -129,6 +129,38 @@ def set_github_repo(repo_str: str) -> None:
             subprocess.run(["git", "-C", source_dir, "remote", "add", "origin", target_url], check=False)
 
 
+def get_github_token() -> Optional[str]:
+    """Retrieves GitHub personal access token from QSettings, env, or ~/.git-credentials."""
+    settings = QSettings("CachySecurity", "CachySecuritySuite")
+    token = settings.value("updater/github_token", "").strip()
+    if token:
+        return token
+    env_token = os.environ.get("GITHUB_TOKEN", "").strip() or os.environ.get("GH_TOKEN", "").strip()
+    if env_token:
+        return env_token
+    git_cred_path = os.path.expanduser("~/.git-credentials")
+    if os.path.exists(git_cred_path):
+        try:
+            with open(git_cred_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if "github.com" in line:
+                        m = re.search(r":([^@:]+)@github\.com", line)
+                        if m:
+                            tok = m.group(1).strip()
+                            if tok.startswith("github_pat_") or tok.startswith("ghp_"):
+                                return tok
+        except Exception:
+            pass
+    return None
+
+
+def set_github_token(token_str: str) -> None:
+    """Saves configured GitHub personal access token in QSettings."""
+    settings = QSettings("CachySecurity", "CachySecuritySuite")
+    settings.setValue("updater/github_token", token_str.strip())
+
+
 def compare_versions(v1: str, v2: str) -> int:
     """Uses vercmp if available, else standard fallback."""
     if shutil.which("vercmp"):
@@ -209,16 +241,20 @@ class UpdateCheckerWorker(QThread):
 
         # GitHub Releases API check if repo is configured or detected
         gh_repo = get_github_repo()
+        gh_token = get_github_token()
         if gh_repo:
             info.github_repo = gh_repo
             try:
                 gh_url = f"https://api.github.com/repos/{gh_repo}/releases/latest"
+                headers = {
+                    "User-Agent": f"cachy-security-suite/{info.gui_installed}",
+                    "Accept": "application/vnd.github+json",
+                }
+                if gh_token:
+                    headers["Authorization"] = f"Bearer {gh_token}"
                 gh_req = urllib.request.Request(
                     gh_url,
-                    headers={
-                        "User-Agent": f"cachy-security-suite/{info.gui_installed}",
-                        "Accept": "application/vnd.github.v3+json",
-                    },
+                    headers=headers,
                 )
                 with urllib.request.urlopen(gh_req, timeout=8) as gh_resp:
                     if gh_resp.status == 200:
@@ -1147,11 +1183,23 @@ class UpdateDialog(QDialog):
             self,
             "GitHub-Repository verknüpfen",
             "Gib dein GitHub-Repository im Format 'Benutzername/Repository' ein:\n"
-            "(z. B. julian/cachy-security-suite oder die HTTPS-URL):",
+            "(z. B. lenzi96/cachy-security-suite oder die HTTPS-URL):",
             text=curr,
         )
         if ok and repo.strip():
             set_github_repo(repo.strip())
+            curr_token = get_github_token() or ""
+            masked_token = (curr_token[:8] + "..." + curr_token[-4:]) if len(curr_token) > 12 else curr_token
+            tok, tok_ok = QInputDialog.getText(
+                self,
+                "GitHub Access Token (optional)",
+                "Gib dein GitHub Personal Access Token (PAT) ein\n"
+                "(Erforderlich für private Repositories, optional für öffentliche Repositories):\n"
+                f"Aktuell hinterlegt: {masked_token if masked_token else 'Keins'}",
+                text=curr_token,
+            )
+            if tok_ok and tok.strip():
+                set_github_token(tok.strip())
             active_repo = get_github_repo()
             QMessageBox.information(
                 self,
