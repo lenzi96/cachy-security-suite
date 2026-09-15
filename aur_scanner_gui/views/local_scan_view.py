@@ -64,25 +64,26 @@ class LocalScanView(QWidget):
         sel_card.setObjectName("selCard")
         sel_card.setStyleSheet("""
             QFrame#selCard {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
                 padding: 4px;
             }
         """)
         sel_layout = QHBoxLayout(sel_card)
-        sel_layout.setContentsMargins(10, 8, 10, 8)
-        sel_layout.setSpacing(8)
+        sel_layout.setContentsMargins(12, 10, 12, 10)
+        sel_layout.setSpacing(10)
 
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText("Pfad zu PKGBUILD oder Quellordner auswählen...")
         self.path_input.setStyleSheet("""
             QLineEdit {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
+                border: 1px solid #334155;
+                border-radius: 7px;
                 padding: 7px 12px;
                 font-size: 12px;
-                background-color: palette(window);
+                color: #f8fafc;
+                background-color: #090d16;
             }
             QLineEdit:focus {
                 border: 1px solid #3b82f6;
@@ -96,13 +97,16 @@ class LocalScanView(QWidget):
         btn_file.setStyleSheet("""
             QPushButton {
                 padding: 7px 14px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #f1f5f9;
                 font-size: 12px;
+                font-weight: 500;
             }
             QPushButton:hover {
-                background: palette(button);
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #475569;
             }
         """)
         btn_file.clicked.connect(self.browse_file)
@@ -113,13 +117,16 @@ class LocalScanView(QWidget):
         btn_dir.setStyleSheet("""
             QPushButton {
                 padding: 7px 14px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #f1f5f9;
                 font-size: 12px;
+                font-weight: 500;
             }
             QPushButton:hover {
-                background: palette(button);
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #475569;
             }
         """)
         btn_dir.clicked.connect(self.browse_directory)
@@ -133,11 +140,20 @@ class LocalScanView(QWidget):
         self.severity_combo.addItem("Info", "info")
         self.severity_combo.setStyleSheet("""
             QComboBox {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
-                padding: 6px 12px;
+                border: 1px solid #334155;
+                border-radius: 7px;
+                padding: 7px 12px;
                 font-size: 12px;
-                background: palette(window);
+                color: #f1f5f9;
+                background: #111827;
+            }
+            QComboBox:hover { border-color: #3b82f6; }
+            QComboBox::drop-down { border: none; }
+            QComboBox QAbstractItemView {
+                background-color: #0f172a;
+                color: #f1f5f9;
+                selection-background-color: #2563eb;
+                border: 1px solid #334155;
             }
         """)
 
@@ -146,19 +162,16 @@ class LocalScanView(QWidget):
         self.btn_scan.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_scan.setStyleSheet("""
             QPushButton {
-                background-color: #2563eb;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563eb, stop:1 #3b82f6);
                 color: #ffffff;
-                font-weight: 600;
+                font-weight: 700;
                 font-size: 12px;
-                padding: 7px 20px;
-                border-radius: 6px;
+                padding: 8px 20px;
+                border-radius: 7px;
                 border: none;
             }
             QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
-                background-color: #1e40af;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1d4ed8, stop:1 #2563eb);
             }
         """)
         self.btn_scan.clicked.connect(self.start_scan)

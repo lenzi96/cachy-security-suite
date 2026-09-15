@@ -55,31 +55,30 @@ class PreInstallView(QWidget):
         card_input.setObjectName("cardInput")
         card_input.setStyleSheet("""
             QFrame#cardInput {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
                 padding: 6px;
             }
         """)
         input_layout = QVBoxLayout(card_input)
-        input_layout.setContentsMargins(12, 10, 12, 10)
+        input_layout.setContentsMargins(14, 10, 14, 10)
         input_layout.setSpacing(10)
 
         row1 = QHBoxLayout()
-        row1.setSpacing(8)
+        row1.setSpacing(10)
         self.pkg_input = QLineEdit()
         self.pkg_input.setPlaceholderText("AUR-Paketname(n) eingeben (z. B. yay, visual-studio-code-bin, discord)...")
         self.pkg_input.setStyleSheet("""
             QLineEdit {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
-                padding: 7px 12px;
+                border: 1px solid #334155;
+                border-radius: 7px;
+                padding: 8px 12px;
                 font-size: 12px;
-                background-color: palette(window);
+                color: #f8fafc;
+                background-color: #090d16;
             }
-            QLineEdit:focus {
-                border: 1px solid #3b82f6;
-            }
+            QLineEdit:focus { border: 1px solid #3b82f6; }
         """)
         self.pkg_input.returnPressed.connect(self.start_check)
 
@@ -88,17 +87,16 @@ class PreInstallView(QWidget):
         self.btn_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_check.setStyleSheet("""
             QPushButton {
-                background-color: #2563eb;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563eb, stop:1 #3b82f6);
                 color: white;
-                font-weight: 600;
+                font-weight: 700;
                 font-size: 12px;
-                padding: 7px 18px;
-                border-radius: 6px;
+                padding: 8px 18px;
+                border-radius: 7px;
                 border: none;
             }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
+            QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1d4ed8, stop:1 #2563eb); }
+            QPushButton:disabled { background: #334155; color: #64748b; }
         """)
         self.btn_check.clicked.connect(self.start_check)
 
@@ -107,17 +105,15 @@ class PreInstallView(QWidget):
         self.btn_download.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_download.setStyleSheet("""
             QPushButton {
-                background-color: #059669;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #10b981);
                 color: white;
-                font-weight: 600;
+                font-weight: 700;
                 font-size: 12px;
-                padding: 7px 16px;
-                border-radius: 6px;
+                padding: 8px 16px;
+                border-radius: 7px;
                 border: none;
             }
-            QPushButton:hover {
-                background-color: #047857;
-            }
+            QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #047857, stop:1 #059669); }
         """)
         self.btn_download.clicked.connect(lambda: self.open_download_dialog())
 
@@ -127,17 +123,16 @@ class PreInstallView(QWidget):
         self.btn_stop.setEnabled(False)
         self.btn_stop.setStyleSheet("""
             QPushButton {
-                padding: 7px 14px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                padding: 8px 16px;
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #94a3b8;
                 font-size: 12px;
+                font-weight: 600;
             }
-            QPushButton:hover:enabled {
-                background: #ef4444;
-                color: white;
-                border-color: #dc2626;
-            }
+            QPushButton:hover:enabled { background: #ef4444; color: white; border-color: #dc2626; }
+            QPushButton:disabled { opacity: 0.4; }
         """)
         self.btn_stop.clicked.connect(self.stop_check)
 
@@ -205,17 +200,17 @@ class PreInstallView(QWidget):
         self.banner_frame.setObjectName("bannerFrame")
         self.banner_frame.setStyleSheet("""
             QFrame#bannerFrame {
-                border-radius: 8px;
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                border-radius: 10px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
             }
         """)
         b_layout = QHBoxLayout(self.banner_frame)
-        b_layout.setContentsMargins(12, 8, 12, 8)
+        b_layout.setContentsMargins(14, 10, 14, 10)
         b_layout.setSpacing(10)
 
         self.status_banner = QLabel("Gib einen AUR-Paketnamen ein, um die Vorab-Prüfung zu starten.")
-        self.status_banner.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent; border: none;")
+        self.status_banner.setStyleSheet("font-weight: 600; font-size: 12px; background: transparent; border: none; color: #f1f5f9;")
         b_layout.addWidget(self.status_banner, stretch=1)
 
         self.btn_quick_download = QPushButton("📥 Paket herunterladen...")
@@ -223,15 +218,15 @@ class PreInstallView(QWidget):
         self.btn_quick_download.setVisible(False)
         self.btn_quick_download.setStyleSheet("""
             QPushButton {
-                background-color: #2563eb;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #10b981);
                 color: white;
-                font-weight: 600;
+                font-weight: 700;
                 font-size: 11px;
-                padding: 5px 12px;
+                padding: 6px 14px;
                 border-radius: 6px;
                 border: none;
             }
-            QPushButton:hover { background-color: #1d4ed8; }
+            QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #047857, stop:1 #059669); }
         """)
         self.btn_quick_download.clicked.connect(self.on_quick_download_clicked)
         b_layout.addWidget(self.btn_quick_download)
@@ -243,17 +238,17 @@ class PreInstallView(QWidget):
         output_card.setObjectName("outputCard")
         output_card.setStyleSheet("""
             QFrame#outputCard {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
             }
         """)
         out_layout = QVBoxLayout(output_card)
-        out_layout.setContentsMargins(10, 10, 10, 10)
+        out_layout.setContentsMargins(12, 12, 12, 12)
         out_layout.setSpacing(6)
 
         lbl_log = QLabel("Scan-Ausgabe & Abhängigkeitsbaum:")
-        lbl_log.setStyleSheet("font-weight: 600; font-size: 12px;")
+        lbl_log.setStyleSheet("font-weight: 700; font-size: 12px; color: #f1f5f9;")
         out_layout.addWidget(lbl_log)
 
         self.txt_log = QTextEdit()
@@ -261,10 +256,10 @@ class PreInstallView(QWidget):
         self.txt_log.setFont(QFont("JetBrains Mono, monospace", 10))
         self.txt_log.setStyleSheet("""
             QTextEdit {
-                background-color: palette(window);
-                color: palette(text);
-                border: 1px solid palette(mid);
-                border-radius: 6px;
+                background-color: #090d16;
+                color: #cbd5e1;
+                border: 1px solid #1e293b;
+                border-radius: 7px;
                 padding: 8px;
             }
         """)

@@ -100,18 +100,33 @@ class MainWindow(QMainWindow):
             "aur-scanner-64.png",
         )
         if os.path.exists(icon_path):
-            pix = QPixmap(icon_path).scaled(40, 40, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pix = QPixmap(icon_path).scaled(36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             logo_lbl.setPixmap(pix)
         else:
             logo_lbl.setPixmap(QIcon.fromTheme("security-high").pixmap(36, 36))
+        logo_lbl.setStyleSheet("""
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(56, 189, 248, 0.18), stop:1 rgba(37, 99, 235, 0.08));
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 10px;
+            padding: 3px;
+        """)
 
         brand_text_layout = QVBoxLayout()
         brand_text_layout.setSpacing(2)
 
         title_lbl = QLabel("Cachy Security")
         title_lbl.setStyleSheet("font-size: 16px; font-weight: 800; color: #f8fafc; letter-spacing: 0.3px;")
-        sub_lbl = QLabel("SECURITY SUITE")
-        sub_lbl.setStyleSheet("font-size: 10px; color: #38bdf8; font-weight: 700; letter-spacing: 1px;")
+        sub_lbl = QLabel("SUITE v1.1.5")
+        sub_lbl.setStyleSheet("""
+            font-size: 9px;
+            color: #38bdf8;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 4px;
+            padding: 1px 6px;
+        """)
 
         brand_text_layout.addWidget(title_lbl)
         brand_text_layout.addWidget(sub_lbl)
@@ -160,18 +175,21 @@ class MainWindow(QMainWindow):
                     border-radius: 8px;
                     font-size: 13px;
                     font-weight: 500;
-                    border: none;
+                    border: 1px solid transparent;
                     background: transparent;
                     color: #94a3b8;
                 }
                 QPushButton:hover {
-                    background-color: rgba(255, 255, 255, 0.06);
+                    background-color: rgba(255, 255, 255, 0.05);
                     color: #f8fafc;
+                    border-color: rgba(255, 255, 255, 0.08);
                 }
                 QPushButton:checked {
-                    background-color: #2563eb;
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1d4ed8, stop:1 #2563eb);
                     color: #ffffff;
                     font-weight: 600;
+                    border-left: 3px solid #38bdf8;
+                    border-radius: 8px;
                 }
             """)
             btn.clicked.connect(lambda checked, i=idx: self.switch_view(i))
@@ -186,9 +204,9 @@ class MainWindow(QMainWindow):
         footer_card.setObjectName("footerCard")
         footer_card.setStyleSheet("""
             QFrame#footerCard {
-                background-color: #1e293b;
-                border: 1px solid #334155;
-                border-radius: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #172033, stop:1 #0f172a);
+                border: 1px solid #293548;
+                border-radius: 10px;
             }
             QFrame#footerCard QLabel {
                 border: none !important;
@@ -197,10 +215,10 @@ class MainWindow(QMainWindow):
         """)
         footer_layout = QVBoxLayout(footer_card)
         footer_layout.setContentsMargins(12, 10, 12, 10)
-        footer_layout.setSpacing(3)
+        footer_layout.setSpacing(4)
 
         lbl_core = QLabel("● aur-scan 2.0.0")
-        lbl_core.setStyleSheet("font-size: 11px; font-weight: 600; color: #10b981;")
+        lbl_core.setStyleSheet("font-size: 11px; font-weight: 700; color: #10b981;")
         lbl_rule_count = QLabel("118 Erkennungsregeln aktiv")
         lbl_rule_count.setStyleSheet("font-size: 10px; color: #94a3b8;")
 
@@ -208,13 +226,13 @@ class MainWindow(QMainWindow):
         self.btn_check_updates.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_check_updates.setStyleSheet("""
             QPushButton {
-                background: rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.06);
                 color: #e2e8f0;
                 font-size: 10px;
-                font-weight: 500;
+                font-weight: 600;
                 border: 1px solid #334155;
-                border-radius: 5px;
-                padding: 5px 8px;
+                border-radius: 6px;
+                padding: 6px 8px;
                 margin-top: 4px;
             }
             QPushButton:hover {

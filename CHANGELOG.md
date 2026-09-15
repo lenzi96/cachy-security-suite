@@ -2,6 +2,26 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.1.5] - 2026-09-15
+
+### 🎨 GUI Modernisierung & Feinschliff
+- **Komplett überarbeitetes Dark-Slate Design:**
+  - Modernes, augenschonendes Farbschema mit tiefem Dunkelblau-Grau (`#0b0f19` / `#111827`) und eleganten Akzenten.
+  - Abgerundete Card-Layouts, dezente Umrandungen (`#1e293b`) und weiche Übergänge passend zu modernen Linux-Desktops (CachyOS / KDE / GNOME).
+- **Verfeinerte Sidebar & Navigation:**
+  - Glühender Logo-Badge-Container mit dezentem Neon-Glow (`#38bdf8`).
+  - Vertikaler Akzentstreifen für aktive Tabs, sanfte Hover-Effekte und stylischer Version-Badge `SUITE v1.1.5`.
+  - Kompakter Systemstatus-Footer mit Live-Status-Dot.
+- **Moderne Metrik-Karten & Statusanzeigen:**
+  - Farbcodierte Indikatoren für Warnungen, Funde und saubere Prüfungen mit Farbverläufen (`#172033` → `#0e1626`).
+- **Überarbeitete Ansichten & Steuerelemente:**
+  - System-Scan, Antivirus (ClamAV), Vorabprüfung und Lokaler Scan mit einheitlichen Schnellaktions-Buttons, modernen Eingabefeldern und schicken Tabellen/Log-Bereichen.
+  - Schlanke, elegante 8px-Scrollbars im gesamten Anwendungsbereich.
+
+### 🔄 GitHub-Updater & Deployment
+- Direkte Anbindung an das offizielle Repository `lenzi96/cachy-security-suite`.
+- Synchronisation aller Build- und Installations-Skripte auf Version 1.1.5.
+
 ---
 
 ## [1.1.0] - 2026-09-15

@@ -55,31 +55,35 @@ class SystemScanView(QWidget):
         card_ctrl.setObjectName("cardCtrl")
         card_ctrl.setStyleSheet("""
             QFrame#cardCtrl {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
                 padding: 6px;
             }
         """)
         c_layout = QHBoxLayout(card_ctrl)
-        c_layout.setContentsMargins(12, 10, 12, 10)
-        c_layout.setSpacing(10)
+        c_layout.setContentsMargins(14, 10, 14, 10)
+        c_layout.setSpacing(12)
 
         self.btn_start = QPushButton("  System-Audit starten")
         self.btn_start.setIcon(QIcon.fromTheme("security-high"))
         self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_start.setStyleSheet("""
             QPushButton {
-                background-color: #10b981;
-                color: white;
-                font-weight: 600;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #10b981);
+                color: #ffffff;
+                font-weight: 700;
                 font-size: 12px;
-                padding: 7px 18px;
-                border-radius: 6px;
+                padding: 8px 20px;
+                border-radius: 7px;
                 border: none;
             }
             QPushButton:hover {
-                background-color: #059669;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #047857, stop:1 #059669);
+            }
+            QPushButton:disabled {
+                background: #334155;
+                color: #64748b;
             }
         """)
         self.btn_start.clicked.connect(self.start_system_scan)
@@ -90,22 +94,25 @@ class SystemScanView(QWidget):
         self.btn_stop.setEnabled(False)
         self.btn_stop.setStyleSheet("""
             QPushButton {
-                padding: 7px 14px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                padding: 8px 16px;
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #94a3b8;
                 font-size: 12px;
+                font-weight: 600;
             }
             QPushButton:hover:enabled {
                 background: #ef4444;
-                color: white;
+                color: #ffffff;
                 border-color: #dc2626;
             }
+            QPushButton:disabled { opacity: 0.4; }
         """)
         self.btn_stop.clicked.connect(self.stop_system_scan)
 
         self.chk_rescan = QCheckBox("PKGBUILDs aus dem AUR neu herunterladen (--rescan)")
-        self.chk_rescan.setStyleSheet("font-size: 12px;")
+        self.chk_rescan.setStyleSheet("font-size: 12px; color: #cbd5e1;")
 
         self.severity_combo = QComboBox()
         self.severity_combo.addItem("Min. Schweregrad: Alle", None)
@@ -114,11 +121,20 @@ class SystemScanView(QWidget):
         self.severity_combo.addItem("Medium", "medium")
         self.severity_combo.setStyleSheet("""
             QComboBox {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
-                padding: 5px 10px;
+                border: 1px solid #334155;
+                border-radius: 7px;
+                padding: 6px 12px;
                 font-size: 12px;
-                background: palette(window);
+                color: #f1f5f9;
+                background: #111827;
+            }
+            QComboBox:hover { border-color: #3b82f6; }
+            QComboBox::drop-down { border: none; }
+            QComboBox QAbstractItemView {
+                background-color: #0f172a;
+                color: #f1f5f9;
+                selection-background-color: #2563eb;
+                border: 1px solid #334155;
             }
         """)
 
@@ -171,15 +187,15 @@ class SystemScanView(QWidget):
         table_card.setObjectName("tableCard")
         table_card.setStyleSheet("""
             QFrame#tableCard {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
             }
         """)
         t_layout = QVBoxLayout(table_card)
-        t_layout.setContentsMargins(8, 8, 8, 8)
+        t_layout.setContentsMargins(12, 12, 12, 12)
         lbl_tbl = QLabel("Geprüfte Pakete:")
-        lbl_tbl.setStyleSheet("font-weight: 600; font-size: 12px;")
+        lbl_tbl.setStyleSheet("font-weight: 700; font-size: 12px; color: #f1f5f9;")
         t_layout.addWidget(lbl_tbl)
 
         self.table = QTableWidget()
@@ -195,19 +211,15 @@ class SystemScanView(QWidget):
                 border: none;
                 background-color: transparent;
                 font-size: 12px;
+                color: #f1f5f9;
             }
             QTableWidget::item {
-                padding: 6px 8px;
-                border-bottom: 1px solid palette(mid);
+                padding: 6px 10px;
+                border-bottom: 1px solid #1e293b;
             }
-            QHeaderView::section {
-                background-color: palette(window);
-                color: palette(text);
-                padding: 6px 8px;
-                font-weight: 600;
-                font-size: 11px;
-                border: none;
-                border-bottom: 2px solid palette(mid);
+            QTableWidget::item:selected {
+                background-color: #2563eb;
+                color: #ffffff;
             }
         """)
         self.table.verticalHeader().setDefaultSectionSize(36)
@@ -220,16 +232,16 @@ class SystemScanView(QWidget):
         log_card.setObjectName("logCard")
         log_card.setStyleSheet("""
             QFrame#logCard {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
             }
         """)
         l_layout = QVBoxLayout(log_card)
-        l_layout.setContentsMargins(10, 10, 10, 10)
+        l_layout.setContentsMargins(12, 12, 12, 12)
         l_layout.setSpacing(6)
         lbl_log = QLabel("Detailliertes Scan-Protokoll:")
-        lbl_log.setStyleSheet("font-weight: 600; font-size: 12px;")
+        lbl_log.setStyleSheet("font-weight: 700; font-size: 12px; color: #f1f5f9;")
         l_layout.addWidget(lbl_log)
 
         self.txt_log = QTextEdit()
@@ -237,10 +249,10 @@ class SystemScanView(QWidget):
         self.txt_log.setFont(QFont("JetBrains Mono, monospace", 10))
         self.txt_log.setStyleSheet("""
             QTextEdit {
-                background-color: palette(window);
-                color: palette(text);
-                border: 1px solid palette(mid);
-                border-radius: 6px;
+                background-color: #090d16;
+                color: #cbd5e1;
+                border: 1px solid #1e293b;
+                border-radius: 7px;
                 padding: 8px;
             }
         """)

@@ -188,13 +188,13 @@ class AntivirusView(QWidget):
         has_clam = shutil.which("clamscan") is not None
         self.engine_card = QFrame()
         self.engine_card.setObjectName("engineCard")
-        bg_color = "rgba(16, 185, 129, 0.1)" if has_clam else "rgba(234, 88, 12, 0.1)"
         border_color = "#10b981" if has_clam else "#ea580c"
         self.engine_card.setStyleSheet(f"""
             QFrame#engineCard {{
-                background-color: {bg_color};
-                border: 1px solid {border_color};
-                border-radius: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
+                border-left: 4px solid {border_color};
+                border-radius: 10px;
                 padding: 4px;
             }}
             QFrame#engineCard QLabel {{
@@ -203,8 +203,8 @@ class AntivirusView(QWidget):
             }}
         """)
         e_layout = QHBoxLayout(self.engine_card)
-        e_layout.setContentsMargins(12, 8, 12, 8)
-        e_layout.setSpacing(10)
+        e_layout.setContentsMargins(14, 10, 14, 10)
+        e_layout.setSpacing(12)
 
         self.icon_engine = QLabel("🛡️")
         self.icon_engine.setStyleSheet("font-size: 20px;")
@@ -218,14 +218,15 @@ class AntivirusView(QWidget):
         self.btn_update_sigs.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_update_sigs.setStyleSheet("""
             QPushButton {
-                padding: 5px 12px;
+                padding: 6px 14px;
                 border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #f1f5f9;
                 font-size: 11px;
-                font-weight: 500;
+                font-weight: 600;
             }
-            QPushButton:hover { background: palette(button); }
+            QPushButton:hover { background: #2563eb; color: #ffffff; border-color: #3b82f6; }
         """)
         self.btn_update_sigs.clicked.connect(self.run_freshclam)
         e_layout.addWidget(self.btn_update_sigs)
@@ -238,25 +239,26 @@ class AntivirusView(QWidget):
         sel_card.setObjectName("selCard")
         sel_card.setStyleSheet("""
             QFrame#selCard {
-                background-color: palette(base);
-                border: 1px solid palette(mid);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #172033, stop:1 #0e1626);
+                border: 1px solid #293548;
                 border-radius: 10px;
                 padding: 4px;
             }
         """)
         s_layout = QHBoxLayout(sel_card)
-        s_layout.setContentsMargins(10, 8, 10, 8)
-        s_layout.setSpacing(8)
+        s_layout.setContentsMargins(12, 10, 12, 10)
+        s_layout.setSpacing(10)
 
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText("Datei oder Verzeichnis für Virenprüfung auswählen...")
         self.path_input.setStyleSheet("""
             QLineEdit {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
-                padding: 6px 12px;
+                border: 1px solid #334155;
+                border-radius: 7px;
+                padding: 7px 12px;
                 font-size: 12px;
-                background-color: palette(window);
+                color: #f8fafc;
+                background-color: #090d16;
             }
             QLineEdit:focus { border: 1px solid #3b82f6; }
         """)
@@ -267,12 +269,15 @@ class AntivirusView(QWidget):
         btn_file.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_file.setStyleSheet("""
             QPushButton {
-                padding: 6px 12px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                padding: 7px 14px;
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #f1f5f9;
                 font-size: 12px;
+                font-weight: 500;
             }
+            QPushButton:hover { background: rgba(255, 255, 255, 0.1); border-color: #475569; }
         """)
         btn_file.clicked.connect(self.browse_file)
 
@@ -281,12 +286,15 @@ class AntivirusView(QWidget):
         btn_dir.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_dir.setStyleSheet("""
             QPushButton {
-                padding: 6px 12px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                padding: 7px 14px;
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #f1f5f9;
                 font-size: 12px;
+                font-weight: 500;
             }
+            QPushButton:hover { background: rgba(255, 255, 255, 0.1); border-color: #475569; }
         """)
         btn_dir.clicked.connect(self.browse_directory)
 
@@ -295,11 +303,20 @@ class AntivirusView(QWidget):
         self.scan_mode_combo.addItem("SHA-256 & Hash-Audit", "hash")
         self.scan_mode_combo.setStyleSheet("""
             QComboBox {
-                border: 1px solid palette(mid);
-                border-radius: 6px;
-                padding: 6px 10px;
+                border: 1px solid #334155;
+                border-radius: 7px;
+                padding: 7px 12px;
                 font-size: 12px;
-                background: palette(window);
+                color: #f1f5f9;
+                background: #111827;
+            }
+            QComboBox:hover { border-color: #3b82f6; }
+            QComboBox::drop-down { border: none; }
+            QComboBox QAbstractItemView {
+                background-color: #0f172a;
+                color: #f1f5f9;
+                selection-background-color: #2563eb;
+                border: 1px solid #334155;
             }
         """)
 
@@ -308,15 +325,16 @@ class AntivirusView(QWidget):
         self.btn_scan.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_scan.setStyleSheet("""
             QPushButton {
-                background-color: #2563eb;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563eb, stop:1 #3b82f6);
                 color: #ffffff;
-                font-weight: 600;
+                font-weight: 700;
                 font-size: 12px;
-                padding: 7px 18px;
-                border-radius: 6px;
+                padding: 8px 20px;
+                border-radius: 7px;
                 border: none;
             }
-            QPushButton:hover { background-color: #1d4ed8; }
+            QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1d4ed8, stop:1 #2563eb); }
+            QPushButton:disabled { background: #334155; color: #64748b; }
         """)
         self.btn_scan.clicked.connect(self.start_scan)
 
@@ -326,12 +344,16 @@ class AntivirusView(QWidget):
         self.btn_stop.setEnabled(False)
         self.btn_stop.setStyleSheet("""
             QPushButton {
-                padding: 6px 12px;
-                border-radius: 6px;
-                border: 1px solid palette(mid);
-                background: palette(window);
+                padding: 8px 16px;
+                border-radius: 7px;
+                border: 1px solid #334155;
+                background: rgba(255, 255, 255, 0.05);
+                color: #94a3b8;
                 font-size: 12px;
+                font-weight: 600;
             }
+            QPushButton:hover:enabled { background: #ef4444; color: #ffffff; border-color: #dc2626; }
+            QPushButton:disabled { opacity: 0.4; }
         """)
         self.btn_stop.clicked.connect(self.stop_scan)
 
