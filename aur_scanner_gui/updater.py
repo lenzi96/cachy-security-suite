@@ -50,7 +50,10 @@ class UpdateInfo:
     github_repo: Optional[str] = None
     github_release_url: Optional[str] = None
     github_tarball_url: Optional[str] = None
+    github_asset_api_url: Optional[str] = None
     github_release_notes: Optional[str] = None
+    github_auth_error: bool = False
+    github_error_message: Optional[str] = None
 
     clamav_installed: bool = False
     clamav_version: str = "Nicht installiert"
@@ -267,9 +270,19 @@ class UpdateCheckerWorker(QThread):
                             for asset in gh_data.get("assets", []):
                                 if asset.get("name", "").endswith((".tar.gz", ".zip")):
                                     info.github_tarball_url = asset.get("browser_download_url", "")
+                                    info.github_asset_api_url = asset.get("url", "")
                                     break
-            except Exception:
-                pass
+            except urllib.error.HTTPError as err:
+                if err.code in (401, 403, 404):
+                    info.github_auth_error = True
+                    if not gh_token:
+                        info.github_error_message = "Repository ist privat. Bitte GitHub-Token hinterlegen oder Repo auf 'Public' stellen."
+                    else:
+                        info.github_error_message = f"GitHub-Fehler {err.code}: Token ungültig oder unzureichende Rechte."
+                else:
+                    info.github_error_message = f"GitHub HTTP-Fehler {err.code}"
+            except Exception as err:
+                info.github_error_message = f"Netzwerkfehler: {str(err)}"
 
         # Compare CLI versions
         if info.cli_installed and info.cli_remote and info.cli_installed != "Nicht gefunden":
@@ -1053,32 +1066,46 @@ class UpdateDialog(QDialog):
         self.latest_info = info
 
         # 1. Update GUI Card
-        self.lbl_c1_version.setText(f"Installiert: v{info.gui_installed}  │  Verfügbar: v{info.gui_remote}")
-        if info.github_repo:
-            self.lbl_c1_github.setText(f"GitHub: {info.github_repo} (Releases aktiv)")
+        if info.github_auth_error:
+            self.lbl_c1_version.setText(f"Installiert: v{info.gui_installed}  │  Verfügbar: Nicht abrufbar (404/Privat)")
+            self.lbl_c1_github.setText(f"GitHub: {info.github_error_message or 'Repository ist privat'}")
+            self.lbl_c1_github.setStyleSheet("color: #f87171; font-size: 11px;")
+            self.badge_c1.setText("⚠️ Token erforderlich")
+            self.badge_c1.setStyleSheet("background-color: rgba(239, 68, 68, 0.2); color: #f87171; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+            self.btn_link_github.setText("🔑 Token hinterlegen...")
+            self.btn_update_gui.setEnabled(False)
         else:
-            self.lbl_c1_github.setText("GitHub: Noch nicht verknüpft")
+            self.lbl_c1_version.setText(f"Installiert: v{info.gui_installed}  │  Verfügbar: v{info.gui_remote}")
+            self.btn_link_github.setText("🔗 GitHub-Repo...")
+            if info.github_repo:
+                self.lbl_c1_github.setText(f"GitHub: {info.github_repo} (Releases aktiv)")
+                self.lbl_c1_github.setStyleSheet("color: #94a3b8; font-size: 11px;")
+            else:
+                self.lbl_c1_github.setText("GitHub: Noch nicht verknüpft")
+                self.lbl_c1_github.setStyleSheet("color: #94a3b8; font-size: 11px;")
 
-        if info.gui_has_update:
-            self.badge_c1.setText(f"⬆ Update verfügbar (v{info.gui_remote})")
-            self.badge_c1.setStyleSheet("background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
-            self.btn_update_gui.setText("Jetzt aktualisieren")
-            self.btn_update_gui.setStyleSheet("""
-                QPushButton {
-                    background-color: #ea580c;
-                    color: #ffffff;
-                    font-weight: 600;
-                    font-size: 11px;
-                    padding: 6px 14px;
-                    border-radius: 6px;
-                    border: none;
-                }
-                QPushButton:hover { background-color: #c2410c; }
-            """)
-        else:
-            self.badge_c1.setText("✓ Aktuell")
-            self.badge_c1.setStyleSheet("background-color: rgba(16, 185, 129, 0.15); color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
-            self.btn_update_gui.setText("Neu installieren")
+            if info.gui_has_update:
+                self.badge_c1.setText(f"⬆ Update verfügbar (v{info.gui_remote})")
+                self.badge_c1.setStyleSheet("background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+                self.btn_update_gui.setText("Jetzt aktualisieren")
+                self.btn_update_gui.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ea580c;
+                        color: #ffffff;
+                        font-weight: 600;
+                        font-size: 11px;
+                        padding: 6px 14px;
+                        border-radius: 6px;
+                        border: none;
+                    }
+                    QPushButton:hover { background-color: #c2410c; }
+                """)
+                self.btn_update_gui.setEnabled(True)
+            else:
+                self.badge_c1.setText("✓ Aktuell")
+                self.badge_c1.setStyleSheet("background-color: rgba(16, 185, 129, 0.15); color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+                self.btn_update_gui.setText("Neu installieren")
+                self.btn_update_gui.setEnabled(True)
 
         # 2. Update CLI Card
         self.lbl_c2_version.setText(f"Installiert: {info.cli_installed}  │  Im AUR: {info.cli_remote}")
@@ -1211,21 +1238,41 @@ class UpdateDialog(QDialog):
     def reinstall_gui(self):
         source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         installer = os.path.join(source_dir, "install.sh")
-        if not os.path.exists(installer):
-            QMessageBox.warning(self, "Fehler", f"Installationsskript nicht gefunden unter:\n{installer}")
-            return
 
         steps = []
-        # If in a git repository with remote origin, sync code first
-        if os.path.isdir(os.path.join(source_dir, ".git")):
+        if os.path.exists(installer) and os.path.isdir(os.path.join(source_dir, ".git")):
+            # In developer git repo: pull and reinstall
             try:
                 res = subprocess.run(["git", "-C", source_dir, "remote"], capture_output=True, text=True, check=False)
                 if "origin" in res.stdout:
                     steps.append(UpdateStep("GitHub Quellcode synchronisieren (git pull)", ["git", "-C", source_dir, "pull", "--rebase"], "Aktualisiere lokale Dateien vom GitHub-Repository"))
             except Exception:
                 pass
+            steps.append(UpdateStep("Cachy Security Suite Reinstallation", ["bash", installer, "--user"], "Installiere grafische Oberfläche neu", is_gui_update=True))
+        else:
+            # Standalone installation on any computer: download tarball and install
+            ver = self.latest_info.gui_remote if self.latest_info else aur_scanner_gui.__version__
+            asset_url = self.latest_info.github_asset_api_url if self.latest_info else ""
+            tarball_url = self.latest_info.github_tarball_url if self.latest_info else ""
+            cmd = [
+                sys.executable,
+                "-m",
+                "aur_scanner_gui.updater",
+                "--download-and-install",
+                "--version",
+                ver,
+                "--asset-url",
+                asset_url or "",
+                "--tarball-url",
+                tarball_url or "",
+            ]
+            steps.append(UpdateStep(
+                f"Cachy Security Suite v{ver} herunterladen & installieren",
+                cmd,
+                "Lädt das offizielle GitHub Release-Archiv herunter und installiert die neue Version",
+                is_gui_update=True,
+            ))
 
-        steps.append(UpdateStep("Cachy Security Suite Reinstallation", ["bash", installer, "--user"], "Installiere grafische Oberfläche neu", is_gui_update=True))
         self.execute_batch_steps(steps)
 
     def run_update_all(self):
@@ -1251,8 +1298,27 @@ class UpdateDialog(QDialog):
         if self.latest_info.gui_has_update:
             source_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             installer = os.path.join(source_dir, "install.sh")
-            if os.path.exists(installer):
+            if os.path.exists(installer) and os.path.isdir(os.path.join(source_dir, ".git")):
                 steps.append(UpdateStep("Cachy Security Suite GUI", ["bash", installer, "--user"], "GUI Suite Update", is_gui_update=True))
+            else:
+                cmd = [
+                    sys.executable,
+                    "-m",
+                    "aur_scanner_gui.updater",
+                    "--download-and-install",
+                    "--version",
+                    self.latest_info.gui_remote,
+                    "--asset-url",
+                    self.latest_info.github_asset_api_url or "",
+                    "--tarball-url",
+                    self.latest_info.github_tarball_url or "",
+                ]
+                steps.append(UpdateStep(
+                    f"Cachy Security Suite v{self.latest_info.gui_remote} herunterladen & installieren",
+                    cmd,
+                    "Lädt das offizielle GitHub Release-Archiv herunter und installiert die neue Version",
+                    is_gui_update=True,
+                ))
 
         # 4. Rules & cache
         steps.append(UpdateStep("Bedrohungsregeln & Cache", ["aur-scan", "system", "--rescan", "--no-color"], "AUR-Cache aktualisieren"))
@@ -1330,3 +1396,132 @@ class UpdateDialog(QDialog):
         else:
             QProcess.startDetached(launcher, [])
         QApplication.quit()
+
+
+def download_and_install_release(version: str = "", asset_url: str = "", tarball_url: str = "") -> int:
+    """
+    Downloads GitHub release tarball, extracts it to /tmp, and executes install.sh --user.
+    Supports both public repositories and private repositories with token.
+    """
+    import tempfile
+
+    repo = get_github_repo() or DEFAULT_GITHUB_REPO
+    token = get_github_token()
+
+    if not version:
+        try:
+            gh_url = f"https://api.github.com/repos/{repo}/releases/latest"
+            headers = {"User-Agent": "cachy-security-suite", "Accept": "application/vnd.github+json"}
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            req = urllib.request.Request(gh_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+                version = data.get("tag_name", "").lstrip("v").strip()
+                for asset in data.get("assets", []):
+                    if asset.get("name", "").endswith((".tar.gz", ".zip")):
+                        tarball_url = asset.get("browser_download_url", "")
+                        asset_url = asset.get("url", "")
+                        break
+        except Exception as e:
+            print(f"[FEHLER] Konnte Release-Informationen von GitHub nicht abrufen: {e}")
+            return 1
+
+    print("=======================================================")
+    print("  Cachy Security Suite - Automatischer Release-Updater  ")
+    print("=======================================================")
+    print(f"Ziel-Version : v{version}")
+    print(f"Repository   : {repo}")
+    print(f"Token aktiv  : {'Ja' if token else 'Nein (Öffentliches Repo)'}")
+    print("-------------------------------------------------------")
+
+    tmp_dir = tempfile.mkdtemp(prefix="cachy_suite_update_")
+    tar_path = os.path.join(tmp_dir, f"cachy-security-suite-v{version}.tar.gz")
+    unpack_dir = os.path.join(tmp_dir, "unpacked")
+
+    try:
+        download_url = asset_url if (token and asset_url) else tarball_url
+        if not download_url:
+            download_url = f"https://github.com/{repo}/releases/download/v{version}/cachy-security-suite-v{version}.tar.gz"
+
+        print("[1/4] Lade Release-Paket herunter...")
+        curl_bin = shutil.which("curl")
+        download_ok = False
+
+        if curl_bin:
+            curl_cmd = [curl_bin, "-sSL", "-f"]
+            if token:
+                curl_cmd.extend(["-H", f"Authorization: Bearer {token}"])
+            curl_cmd.extend(["-H", "Accept: application/octet-stream", download_url, "-o", tar_path])
+            res = subprocess.run(curl_cmd, check=False)
+            if res.returncode == 0 and os.path.exists(tar_path) and os.path.getsize(tar_path) > 1000:
+                download_ok = True
+
+        if not download_ok:
+            headers = {"User-Agent": "Cachy-Security-Suite"}
+            if token and "api.github.com" in download_url:
+                headers["Authorization"] = f"Bearer {token}"
+                headers["Accept"] = "application/octet-stream"
+            req = urllib.request.Request(download_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp, open(tar_path, "wb") as out_f:
+                shutil.copyfileobj(resp, out_f)
+            if os.path.exists(tar_path) and os.path.getsize(tar_path) > 1000:
+                download_ok = True
+
+        if not download_ok:
+            print("[FEHLER] Herunterladen des Release-Archivs fehlgeschlagen.")
+            print("Hinweis: Falls das Repository privat ist, stelle sicher, dass ein gültiges Token hinterlegt ist.")
+            return 1
+
+        size_mb = os.path.getsize(tar_path) / (1024 * 1024)
+        print(f"✓ Download erfolgreich ({size_mb:.2f} MB)")
+
+        print("[2/4] Entpacke Archiv...")
+        os.makedirs(unpack_dir, exist_ok=True)
+        res_tar = subprocess.run(["tar", "-xzf", tar_path, "-C", unpack_dir], check=False)
+        if res_tar.returncode != 0:
+            print("[FEHLER] Archiv konnte nicht entpackt werden.")
+            return 1
+        print("✓ Entpacken abgeschlossen.")
+
+        # Find install.sh inside unpacked folder
+        installer_path = None
+        for root, dirs, files in os.walk(unpack_dir):
+            if "install.sh" in files:
+                installer_path = os.path.join(root, "install.sh")
+                break
+
+        if not installer_path:
+            print("[FEHLER] install.sh im entpackten Release-Archiv nicht gefunden.")
+            return 1
+
+        print(f"[3/4] Führe Installation aus ({installer_path} --user)...")
+        os.chmod(installer_path, 0o755)
+        res_inst = subprocess.run(["bash", installer_path, "--user"], check=False)
+        if res_inst.returncode != 0:
+            print(f"[FEHLER] Installation schlug fehl mit Exit-Code {res_inst.returncode}")
+            return res_inst.returncode
+
+        print("[4/4] Bereinige temporäre Dateien...")
+        print(f"✓ Cachy Security Suite wurde erfolgreich auf v{version} aktualisiert!")
+        return 0
+
+    finally:
+        try:
+            shutil.rmtree(tmp_dir)
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    if any(arg in sys.argv for arg in ("--download-and-install", "-h", "--help")):
+        import argparse
+        parser = argparse.ArgumentParser(description="Cachy Security Suite Standalone Release Installer")
+        parser.add_argument("--download-and-install", action="store_true")
+        parser.add_argument("--version", default="")
+        parser.add_argument("--asset-url", default="")
+        parser.add_argument("--tarball-url", default="")
+        args, _ = parser.parse_known_args()
+        if args.download_and_install:
+            sys.exit(download_and_install_release(args.version, args.asset_url, args.tarball_url))
+
