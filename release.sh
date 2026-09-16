@@ -17,8 +17,18 @@ set -e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
-# 1. Ermittle Version
-TARGET_VER="$1"
+# 1. Ermittle Argumente & Version
+NO_INSTALL=0
+TARGET_VER=""
+
+for arg in "$@"; do
+    if [ "$arg" == "--no-install" ]; then
+        NO_INSTALL=1
+    elif [[ "$arg" != -* ]] && [ -z "$TARGET_VER" ]; then
+        TARGET_VER="$arg"
+    fi
+done
+
 if [ -z "$TARGET_VER" ]; then
     CURRENT_VER=$(grep -E "^__version__" aur_scanner_gui/__init__.py | cut -d'"' -f2)
     echo "===================================================="
@@ -210,13 +220,21 @@ if upload_url_raw and os.path.exists(TAR_PATH):
 "
 
 # 8. Lokale Reinstallation
-echo ">> Installiere Release v$TARGET_VER lokal in Benutzerumgebung..."
-./install.sh --user
+if [ "$NO_INSTALL" -eq 1 ]; then
+    echo ">> Lokale Reinstallation übersprungen (--no-install aktiv)."
+else
+    echo ">> Installiere Release v$TARGET_VER lokal in Benutzerumgebung..."
+    ./install.sh --user
+fi
 
 echo ""
 echo "===================================================="
 echo "✓ Release v$TARGET_VER erfolgreich veröffentlicht!"
 echo "✓ Git Commits & Tag übertragen: https://github.com/lenzi96/cachy-security-suite"
 echo "✓ GitHub Release & Tarball Asset hochgeladen"
-echo "✓ Lokal installiert und einsatzbereit!"
+if [ "$NO_INSTALL" -eq 1 ]; then
+    echo "✓ Lokale Installation wie gewünscht übersprungen."
+else
+    echo "✓ Lokal installiert und einsatzbereit!"
+fi
 echo "===================================================="

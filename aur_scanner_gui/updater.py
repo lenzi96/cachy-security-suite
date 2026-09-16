@@ -1133,12 +1133,51 @@ class UpdateDialog(QDialog):
 
             if info.clamav_service_active:
                 srv_msg = "✓ Hintergrunddienst aktiv (automatische Updates)"
-                self.btn_enable_service.setVisible(False)
+                self.btn_enable_service.setText("Dienst löschen")
+                self.btn_enable_service.setStyleSheet("""
+                    QPushButton {
+                        padding: 4px 10px;
+                        border-radius: 5px;
+                        border: 1px solid #dc2626;
+                        background: rgba(220, 38, 38, 0.1);
+                        color: #ef4444;
+                        font-size: 10px;
+                        font-weight: 600;
+                    }
+                    QPushButton:hover { background: #dc2626; color: #ffffff; }
+                """)
+                self.btn_enable_service.setVisible(True)
             elif info.clamav_service_enabled:
                 srv_msg = "Dienst aktiviert (wartet auf Timer)"
-                self.btn_enable_service.setVisible(False)
+                self.btn_enable_service.setText("Dienst löschen")
+                self.btn_enable_service.setStyleSheet("""
+                    QPushButton {
+                        padding: 4px 10px;
+                        border-radius: 5px;
+                        border: 1px solid #dc2626;
+                        background: rgba(220, 38, 38, 0.1);
+                        color: #ef4444;
+                        font-size: 10px;
+                        font-weight: 600;
+                    }
+                    QPushButton:hover { background: #dc2626; color: #ffffff; }
+                """)
+                self.btn_enable_service.setVisible(True)
             else:
                 srv_msg = "⚠ Hintergrunddienst inaktiv (keine autom. Aktualisierung)"
+                self.btn_enable_service.setText("Dienst aktivieren")
+                self.btn_enable_service.setStyleSheet("""
+                    QPushButton {
+                        padding: 4px 10px;
+                        border-radius: 5px;
+                        border: 1px solid #3b82f6;
+                        background: rgba(59, 130, 246, 0.1);
+                        color: #3b82f6;
+                        font-size: 10px;
+                        font-weight: 600;
+                    }
+                    QPushButton:hover { background: #3b82f6; color: #ffffff; }
+                """)
                 self.btn_enable_service.setVisible(True)
             self.lbl_c3_service.setText(srv_msg)
 
@@ -1192,10 +1231,26 @@ class UpdateDialog(QDialog):
         self.execute_batch_steps(steps)
 
     def enable_clamav_service(self):
-        cmd = ["pkexec", "systemctl", "enable", "--now", "clamav-freshclam.service"]
-        steps = [
-            UpdateStep("ClamAV Hintergrunddienst aktivieren", cmd, "Systemd Service & Timer starten")
-        ]
+        is_active_or_enabled = False
+        if hasattr(self, "latest_info") and self.latest_info:
+            is_active_or_enabled = self.latest_info.clamav_service_active or self.latest_info.clamav_service_enabled
+        else:
+            try:
+                res = subprocess.run(["systemctl", "is-active", "clamav-freshclam.service"], capture_output=True, text=True, check=False)
+                is_active_or_enabled = (res.stdout.strip() == "active")
+            except Exception:
+                pass
+
+        if is_active_or_enabled:
+            cmd = ["pkexec", "systemctl", "disable", "--now", "clamav-freshclam.service"]
+            steps = [
+                UpdateStep("ClamAV Hintergrunddienst löschen / stoppen", cmd, "Systemd Service beenden und aus Autostart entfernen")
+            ]
+        else:
+            cmd = ["pkexec", "systemctl", "enable", "--now", "clamav-freshclam.service"]
+            steps = [
+                UpdateStep("ClamAV Hintergrunddienst aktivieren", cmd, "Systemd Service & Timer starten")
+            ]
         self.execute_batch_steps(steps)
 
     def rescan_rules(self):

@@ -11,6 +11,8 @@ from typing import List, Optional
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon, QTextCharFormat, QTextCursor
 from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFrame,
@@ -18,6 +20,7 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -37,10 +40,18 @@ class ClamScanWorker(QThread):
     file_scanned = pyqtSignal(str, str, str)  # file, status, virus_name
     finished = pyqtSignal(int, int, str)      # infected_count, total_scanned, summary
 
-    def __init__(self, target_path: str, infected_only: bool = True):
+    def __init__(
+        self,
+        target_path: str,
+        infected_only: bool = True,
+        is_system_scan: bool = False,
+        custom_targets: Optional[List[str]] = None,
+    ):
         super().__init__()
         self.target_path = target_path
         self.infected_only = infected_only
+        self.is_system_scan = is_system_scan
+        self.custom_targets = custom_targets or []
         self.process: Optional[subprocess.Popen] = None
         self._is_cancelled = False
 
@@ -60,9 +71,38 @@ class ClamScanWorker(QThread):
         cmd = ["clamscan", "-r"]
         if self.infected_only:
             cmd.append("-i")
-        cmd.append(self.target_path)
+
+        # System-Scan: Virtuelle Filesysteme ausschließen um Hänger zu verhindern
+        if self.is_system_scan or self.target_path == "/":
+            exclusions = [
+                "^/sys",
+                "^/proc",
+                "^/dev",
+                "^/run",
+                "^/tmp",
+                "^/var/tmp",
+                "^/mnt",
+                "^/media",
+                "^/run/media",
+                "^/sys/kernel/debug",
+                "^/var/lib/docker",
+                "^/var/lib/flatpak",
+            ]
+            for excl in exclusions:
+                cmd.append(f"--exclude-dir={excl}")
+
+        if self.custom_targets:
+            valid_targets = [t for t in self.custom_targets if os.path.exists(t)]
+            if not valid_targets:
+                self.output_line.emit("Fehler: Keine gültigen Systempfade gefunden.")
+                self.finished.emit(-1, 0, "Keine Pfade vorhanden")
+                return
+            cmd.extend(valid_targets)
+        else:
+            cmd.append(self.target_path)
 
         try:
+            self.output_line.emit(f"Befehl: {' '.join(cmd)}\n")
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -166,6 +206,8 @@ class AntivirusView(QWidget):
         self.scan_worker: Optional[ClamScanWorker] = None
         self.freshclam_worker: Optional[FreshClamWorker] = None
         self.current_sha256 = ""
+        self.is_system_scan = False
+        self.custom_targets: List[str] = []
         self.init_ui()
 
     def init_ui(self):
@@ -230,6 +272,23 @@ class AntivirusView(QWidget):
         """)
         self.btn_update_sigs.clicked.connect(self.run_freshclam)
         e_layout.addWidget(self.btn_update_sigs)
+
+        self.btn_service_action = QPushButton("Freshclam-Dienst")
+        self.btn_service_action.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_service_action.setStyleSheet("""
+            QPushButton {
+                padding: 6px 14px;
+                border-radius: 6px;
+                border: 1px solid #7f1d1d;
+                background: rgba(239, 68, 68, 0.12);
+                color: #f87171;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #dc2626; color: #ffffff; border-color: #ef4444; }
+        """)
+        self.btn_service_action.clicked.connect(self.toggle_freshclam_service)
+        e_layout.addWidget(self.btn_service_action)
 
         self.refresh_engine_status()
         layout.addWidget(self.engine_card)
@@ -298,6 +357,23 @@ class AntivirusView(QWidget):
         """)
         btn_dir.clicked.connect(self.browse_directory)
 
+        self.btn_system_scan = QPushButton("🖥️ System-Scan ▾")
+        self.btn_system_scan.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_system_scan.setToolTip("Systemweiten Viren-Scan durchführen (Schnell-Scan, Voll-Scan, Home)")
+        self.btn_system_scan.setStyleSheet("""
+            QPushButton {
+                padding: 7px 14px;
+                border-radius: 7px;
+                border: 1px solid #3b82f6;
+                background: rgba(59, 130, 246, 0.15);
+                color: #60a5fa;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #2563eb; color: #ffffff; border-color: #3b82f6; }
+        """)
+        self.btn_system_scan.clicked.connect(self.show_system_scan_menu)
+
         self.scan_mode_combo = QComboBox()
         self.scan_mode_combo.addItem("ClamAV Viren-Scan", "clamav")
         self.scan_mode_combo.addItem("SHA-256 & Hash-Audit", "hash")
@@ -319,6 +395,11 @@ class AntivirusView(QWidget):
                 border: 1px solid #334155;
             }
         """)
+
+        self.chk_infected_only = QCheckBox("Nur Funde (-i)")
+        self.chk_infected_only.setChecked(True)
+        self.chk_infected_only.setToolTip("Protokolliert nur infizierte oder verdächtige Dateien (empfohlen für System-Scans)")
+        self.chk_infected_only.setStyleSheet("color: palette(text); font-size: 11px;")
 
         self.btn_scan = QPushButton("  Scan starten")
         self.btn_scan.setIcon(QIcon.fromTheme("security-high"))
@@ -360,7 +441,9 @@ class AntivirusView(QWidget):
         s_layout.addWidget(self.path_input, stretch=3)
         s_layout.addWidget(btn_file)
         s_layout.addWidget(btn_dir)
+        s_layout.addWidget(self.btn_system_scan)
         s_layout.addWidget(self.scan_mode_combo)
+        s_layout.addWidget(self.chk_infected_only)
         s_layout.addWidget(self.btn_scan)
         s_layout.addWidget(self.btn_stop)
 
@@ -497,17 +580,191 @@ class AntivirusView(QWidget):
         splitter.setSizes([260, 200])
         layout.addWidget(splitter, stretch=1)
 
+    def check_freshclam_service_status(self) -> dict:
+        info = {"active": False, "enabled": False}
+        try:
+            res_a = subprocess.run(["systemctl", "is-active", "clamav-freshclam.service"], capture_output=True, text=True, check=False)
+            info["active"] = (res_a.stdout.strip() == "active")
+            res_e = subprocess.run(["systemctl", "is-enabled", "clamav-freshclam.service"], capture_output=True, text=True, check=False)
+            info["enabled"] = (res_e.stdout.strip() == "enabled")
+        except Exception:
+            pass
+        return info
+
+    def toggle_freshclam_service(self):
+        status = self.check_freshclam_service_status()
+        is_running = status["active"] or status["enabled"]
+
+        if is_running:
+            reply = QMessageBox.question(
+                self,
+                "Freshclam-Hintergrunddienst löschen / stoppen",
+                "Möchtest du den automatischen Freshclam-Hintergrunddienst (clamav-freshclam.service) wirklich beenden und dauerhaft deaktivieren/löschen?\n\n"
+                "Der Dienst wird sofort gestoppt und aus dem automatischen Systemstart entfernt.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.txt_log.append("\n=== Deaktiviere und beende clamav-freshclam.service ===")
+                cmd = ["pkexec", "systemctl", "disable", "--now", "clamav-freshclam.service"]
+                try:
+                    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    if res.returncode == 0:
+                        self.txt_log.append("✓ clamav-freshclam.service wurde erfolgreich gestoppt und gelöscht/deaktiviert.\n")
+                        QMessageBox.information(
+                            self,
+                            "Dienst gelöscht / gestoppt",
+                            "Der Hintergrunddienst clamav-freshclam.service wurde gestoppt und aus dem Systemstart entfernt."
+                        )
+                    else:
+                        err = res.stderr.strip() or res.stdout.strip()
+                        self.txt_log.append(f"Fehler: {err}\n")
+                        QMessageBox.warning(self, "Fehler", f"Konnte Dienst nicht deaktivieren:\n{err}")
+                except Exception as exc:
+                    self.txt_log.append(f"Fehler: {exc}\n")
+                    QMessageBox.warning(self, "Fehler", str(exc))
+                self.refresh_engine_status()
+        else:
+            reply = QMessageBox.question(
+                self,
+                "Freshclam-Hintergrunddienst aktivieren",
+                "Möchtest du den automatischen Freshclam-Hintergrunddienst (clamav-freshclam.service) aktivieren und starten?\n\n"
+                "Der Dienst lädt künftig im Hintergrund vollautomatisch die neuesten Virendefinitionen herunter.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.txt_log.append("\n=== Aktiviere und starte clamav-freshclam.service ===")
+                cmd = ["pkexec", "systemctl", "enable", "--now", "clamav-freshclam.service"]
+                try:
+                    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    if res.returncode == 0:
+                        self.txt_log.append("✓ clamav-freshclam.service wurde erfolgreich aktiviert und gestartet.\n")
+                        QMessageBox.information(
+                            self,
+                            "Dienst aktiviert",
+                            "Der Hintergrunddienst clamav-freshclam.service wurde gestartet und wird bei jedem Systemstart ausgeführt."
+                        )
+                    else:
+                        err = res.stderr.strip() or res.stdout.strip()
+                        self.txt_log.append(f"Fehler: {err}\n")
+                        QMessageBox.warning(self, "Fehler", f"Konnte Dienst nicht aktivieren:\n{err}")
+                except Exception as exc:
+                    self.txt_log.append(f"Fehler: {exc}\n")
+                    QMessageBox.warning(self, "Fehler", str(exc))
+                self.refresh_engine_status()
+
+    def show_system_scan_menu(self):
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #0f172a;
+                color: #f1f5f9;
+                border: 1px solid #334155;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 8px 20px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #2563eb;
+                color: #ffffff;
+            }
+        """)
+
+        act_quick = menu.addAction("⚡ Schneller System-Scan (/home, /etc, /usr/bin, /opt)")
+        act_full = menu.addAction("🛡️ Vollständiger System-Scan (Gesamtes Dateisystem /)")
+        menu.addSeparator()
+        act_home = menu.addAction("🏠 Benutzer-Verzeichnis (~/)")
+        act_dl = menu.addAction("📥 Downloads-Verzeichnis")
+
+        action = menu.exec(self.btn_system_scan.mapToGlobal(self.btn_system_scan.rect().bottomLeft()))
+        if not action:
+            return
+
+        self.scan_mode_combo.setCurrentIndex(0)  # ClamAV Viren-Scan
+
+        if action == act_quick:
+            self.path_input.setText("[Schnell-Scan] Kritische Systempfade")
+            self.custom_targets = ["/home", "/etc", "/usr/bin", "/usr/local/bin", "/opt"]
+            self.is_system_scan = True
+            self.start_scan()
+        elif action == act_full:
+            reply = QMessageBox.question(
+                self,
+                "Vollständiger System-Scan",
+                "Ein vollständiger System-Scan durchsucht alle Festplatten und Partitionen (ausgenommen virtuelle Verzeichnisse wie /proc, /sys, /dev etc.).\n\n"
+                "Möchtest du den Scan jetzt starten?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.path_input.setText("/")
+                self.custom_targets = []
+                self.is_system_scan = True
+                self.start_scan()
+        elif action == act_home:
+            self.path_input.setText(os.path.expanduser("~"))
+            self.custom_targets = []
+            self.is_system_scan = False
+            self.start_scan()
+        elif action == act_dl:
+            dl_path = os.path.expanduser("~/Downloads")
+            if not os.path.exists(dl_path):
+                dl_path = os.path.expanduser("~")
+            self.path_input.setText(dl_path)
+            self.custom_targets = []
+            self.is_system_scan = False
+            self.start_scan()
+
     def refresh_engine_status(self):
         has_clam = shutil.which("clamscan") is not None
         has_fresh = shutil.which("freshclam") is not None
         db_ready = has_clam_db()
+        srv_status = self.check_freshclam_service_status()
 
         self.btn_update_sigs.setEnabled(has_fresh)
+        self.btn_service_action.setEnabled(has_fresh or has_clam)
+
+        if srv_status["active"] or srv_status["enabled"]:
+            self.btn_service_action.setText("🗑️ Freshclam-Dienst löschen")
+            self.btn_service_action.setToolTip("Hintergrunddienst ist aktiv/aktiviert. Klicken, um ihn sofort zu beenden und dauerhaft zu löschen/deaktivieren.")
+            self.btn_service_action.setStyleSheet("""
+                QPushButton {
+                    padding: 6px 14px;
+                    border-radius: 6px;
+                    border: 1px solid #7f1d1d;
+                    background: rgba(239, 68, 68, 0.12);
+                    color: #f87171;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                QPushButton:hover { background: #dc2626; color: #ffffff; border-color: #ef4444; }
+            """)
+        else:
+            self.btn_service_action.setText("⚙️ Freshclam-Dienst aktivieren")
+            self.btn_service_action.setToolTip("Hintergrunddienst ist inaktiv. Klicken, um automatische Updates im Hintergrund zu aktivieren.")
+            self.btn_service_action.setStyleSheet("""
+                QPushButton {
+                    padding: 6px 14px;
+                    border-radius: 6px;
+                    border: 1px solid #1e3a8a;
+                    background: rgba(59, 130, 246, 0.1);
+                    color: #60a5fa;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                QPushButton:hover { background: #2563eb; color: #ffffff; border-color: #3b82f6; }
+            """)
+
+        srv_text = " (Hintergrunddienst aktiv)" if srv_status["active"] else (" (Dienst deaktiviert)" if not srv_status["enabled"] else " (Dienst wartet)")
 
         if has_clam and db_ready:
             self.icon_engine.setText("🛡️")
             self.lbl_engine_info.setText(
-                "<b>ClamAV Antivirus-Engine aktiv:</b> Signaturen geladen (/var/lib/clamav). Vollständiger Viren-Scan einsatzbereit."
+                f"<b>ClamAV Antivirus-Engine aktiv:</b> Signaturen geladen (/var/lib/clamav).{srv_text} Vollständiger Viren-Scan einsatzbereit."
             )
             self.lbl_engine_info.setStyleSheet("font-size: 12px; color: #065f46;")
             self.engine_card.setStyleSheet("""
@@ -569,6 +826,8 @@ class AntivirusView(QWidget):
             "Alle Dateien (*)",
         )
         if file_path:
+            self.is_system_scan = False
+            self.custom_targets = []
             self.path_input.setText(file_path)
             self.start_scan()
 
@@ -579,6 +838,8 @@ class AntivirusView(QWidget):
             os.path.expanduser("~"),
         )
         if dir_path:
+            self.is_system_scan = False
+            self.custom_targets = []
             self.path_input.setText(dir_path)
             self.start_scan()
 
@@ -588,7 +849,7 @@ class AntivirusView(QWidget):
             QMessageBox.warning(self, "Hinweis", "Bitte wähle eine Datei oder einen Ordner aus.")
             return
 
-        if not os.path.exists(target):
+        if not target.startswith("[") and not os.path.exists(target):
             QMessageBox.critical(self, "Fehler", f"Pfad nicht gefunden:\n{target}")
             return
 
@@ -599,7 +860,7 @@ class AntivirusView(QWidget):
         self.card_scanned.set_value(0)
 
         # Calculate SHA256 if file
-        if os.path.isfile(target):
+        if not target.startswith("[") and os.path.isfile(target):
             try:
                 hasher = hashlib.sha256()
                 with open(target, "rb") as f:
@@ -613,10 +874,13 @@ class AntivirusView(QWidget):
                 self.btn_vt.setEnabled(False)
         else:
             self.current_sha256 = ""
-            self.lbl_hash_info.setText("SHA-256: (Verzeichnis)")
+            self.lbl_hash_info.setText("SHA-256: (Verzeichnis/System-Scan)")
             self.btn_vt.setEnabled(False)
 
         if mode == "hash":
+            if target.startswith("["):
+                QMessageBox.warning(self, "Hinweis", "Hash-Audit wird für Einzeldateien unterstützt. Bitte wähle eine Datei aus.")
+                return
             self.perform_hash_audit(target)
             return
 
@@ -628,7 +892,8 @@ class AntivirusView(QWidget):
                 "          Führe stattdessen SHA-256 Integritätsprüfung & VirusTotal-Audit durch...\n"
             )
             self.card_status.set_text("ClamAV fehlt (Fallback: SHA-256)", "#f59e0b")
-            self.perform_hash_audit(target)
+            if not target.startswith("["):
+                self.perform_hash_audit(target)
             return
 
         if not has_clam_db():
@@ -639,7 +904,8 @@ class AntivirusView(QWidget):
                 "          Führe stattdessen SHA-256 Integritätsprüfung & VirusTotal-Audit durch...\n"
             )
             self.card_status.set_text("DB fehlt (Fallback: SHA-256)", "#f59e0b")
-            self.perform_hash_audit(target)
+            if not target.startswith("["):
+                self.perform_hash_audit(target)
             return
 
         self.btn_scan.setEnabled(False)
@@ -647,7 +913,16 @@ class AntivirusView(QWidget):
         self.progress_bar.setVisible(True)
         self.card_status.set_text("Scan läuft...", "#3b82f6")
 
-        self.scan_worker = ClamScanWorker(target, infected_only=False)
+        is_sys = self.is_system_scan or (target == "/")
+        customs = self.custom_targets if target.startswith("[") else None
+        inf_only = self.chk_infected_only.isChecked()
+
+        self.scan_worker = ClamScanWorker(
+            target_path=target,
+            infected_only=inf_only,
+            is_system_scan=is_sys,
+            custom_targets=customs,
+        )
         self.scan_worker.output_line.connect(self.on_log_line)
         self.scan_worker.file_scanned.connect(self.on_file_scanned)
         self.scan_worker.finished.connect(self.on_scan_finished)

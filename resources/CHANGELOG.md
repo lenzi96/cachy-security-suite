@@ -2,6 +2,32 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.2.5] - 2026-09-16
+
+### 🛡️ System-Scan & Dienst-Management für den Virenscanner (ClamAV)
+- **Erweiterter System-Scan für ClamAV:**
+  - Neues **„System-Scan ▾“** Menü mit optimierten Voreinstellungen:
+    - ⚡ **Schneller System-Scan:** Prüft kritische Ausführungspfade (`/home`, `/etc`, `/usr/bin`, `/usr/local/bin`, `/opt`).
+    - 🛡️ **Vollständiger System-Scan:** Durchsucht das gesamte Dateisystem (`/`).
+    - 🏠 **Benutzer-Verzeichnis:** Schneller Scan des aktuellen Home-Ordners (`~/`).
+    - 📥 **Downloads-Ordner:** Gezielte Überprüfung frisch heruntergeladener Dateien.
+  - **Sichere Filesystem-Exclusionen:**
+    - Automatische Ausnahme virtueller und flüchtiger Systempfade (`/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/mnt`, `/media`, `/run/media`, Docker/Flatpak), wodurch Hänger und Endlosschleifen bei Scans auf `/` zuverlässig verhindert werden.
+  - **Checkbox „Nur Funde (-i)“:**
+    - Optionale Filterung zur Protokollierung nur tatsächlich infizierter oder verdächtiger Dateien – schont Ressourcen und hält das Log auch bei Hunderttausenden gescannten Dateien übersichtlich.
+
+### 🗑️ Freshclam Hintergrunddienst-Verwaltung & Löschen
+- **1-Klick-Steuerung für `clamav-freshclam.service`:**
+  - Neuer Button im Virenscanner-Banner und im Update-Center:
+    - Wenn aktiv/aktiviert: **„🗑️ Freshclam-Dienst löschen“** – beendet den Daemon sofort und entfernt ihn dauerhaft aus dem systemd-Systemstart (`pkexec systemctl disable --now clamav-freshclam.service`).
+    - Wenn inaktiv: **„⚙️ Freshclam-Dienst aktivieren“** – startet und aktiviert automatische Signatur-Updates.
+  - Dynamischer Statusabgleich mit Systemd in Echtzeit.
+
+### 🚀 Release-Management
+- Unterstützung des Schalters `--no-install` im Veröffentlichungsskript `release.sh` zur Bereitstellung und Veröffentlichung auf GitHub ohne automatische lokale Überschreibung.
+
+---
+
 ## [1.2.0] - 2026-09-15
 
 ### 🛡️ Integrierte Firewall-Steuerung & Netzwerkschutz

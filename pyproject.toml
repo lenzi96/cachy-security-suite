@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cachy-security-suite"
-version = "1.2.0"
+version = "1.2.5"
 description = "Modern PyQt6 graphical security & audit suite for Arch Linux & CachyOS"
 readme = "README.md"
 requires-python = ">=3.9"
