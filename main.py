@@ -15,10 +15,11 @@ if any(arg in sys.argv for arg in ("--download-and-install", "-h", "--help")):
     parser.add_argument("--version", default="")
     parser.add_argument("--asset-url", default="")
     parser.add_argument("--tarball-url", default="")
+    parser.add_argument("--token", default="")
     args, _ = parser.parse_known_args()
     if args.download_and_install:
         from aur_scanner_gui.updater import download_and_install_release
-        sys.exit(download_and_install_release(args.version, args.asset_url, args.tarball_url))
+        sys.exit(download_and_install_release(args.version, args.asset_url, args.tarball_url, args.token))
 
 from aur_scanner_gui.app import main
 

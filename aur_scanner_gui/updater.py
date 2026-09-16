@@ -411,8 +411,12 @@ class BatchUpdateWorker(QThread):
         if self.process and self.process.poll() is None:
             try:
                 self.process.terminate()
+                self.process.wait(timeout=1)
             except Exception:
-                pass
+                try:
+                    self.process.kill()
+                except Exception:
+                    pass
 
     def run(self):
         total = len(self.steps)

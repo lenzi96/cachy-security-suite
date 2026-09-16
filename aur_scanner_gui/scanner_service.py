@@ -26,6 +26,8 @@ class ScanWorker(QThread):
         self._is_cancelled = True
 
     def run(self):
+        stdout = ""
+        stderr = ""
         try:
             cmd = ["aur-scan", "scan", "-f", "json", "-q"]
             if self.severity:
@@ -115,8 +117,12 @@ class ProcessStreamWorker(QThread):
         if self.process and self.process.poll() is None:
             try:
                 self.process.terminate()
+                self.process.wait(timeout=1)
             except Exception:
-                pass
+                try:
+                    self.process.kill()
+                except Exception:
+                    pass
 
     def run(self):
         try:

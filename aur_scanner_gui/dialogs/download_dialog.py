@@ -12,6 +12,8 @@ import tempfile
 import urllib.request
 from typing import Optional
 
+import aur_scanner_gui
+
 from PyQt6.QtCore import QSettings, Qt, QThread, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices, QFont, QIcon
 from PyQt6.QtWidgets import (
@@ -46,7 +48,7 @@ class AurDownloadWorker(QThread):
             # 1. Query AUR RPC to confirm package exists
             self.progress_msg.emit(f"Frage AUR RPC API für '{self.pkg_name}' ab...")
             url = f"https://aur.archlinux.org/rpc/v5/info?arg[]={urllib.parse.quote(self.pkg_name)}"
-            req = urllib.request.Request(url, headers={"User-Agent": "Cachy-Security-Suite/1.0.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": f"Cachy-Security-Suite/{aur_scanner_gui.__version__}"})
 
             try:
                 with urllib.request.urlopen(req, timeout=10) as resp:

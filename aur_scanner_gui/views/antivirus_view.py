@@ -60,8 +60,12 @@ class ClamScanWorker(QThread):
         if self.process and self.process.poll() is None:
             try:
                 self.process.terminate()
+                self.process.wait(timeout=1)
             except Exception:
-                pass
+                try:
+                    self.process.kill()
+                except Exception:
+                    pass
 
     def run(self):
         infected_count = 0
@@ -150,9 +154,19 @@ class ClamScanWorker(QThread):
                         fpath = clean_line.replace(": OK", "").strip()
                         self.file_scanned.emit(fpath, "OK", "")
 
+            if self._is_cancelled:
+                self.finished.emit(-2, total_scanned, "Scan abgebrochen")
+                return
+
             self.process.wait()
+            if self._is_cancelled:
+                self.finished.emit(-2, total_scanned, "Scan abgebrochen")
+                return
             self.finished.emit(infected_count, total_scanned, "\n".join(summary_lines))
         except Exception as exc:
+            if self._is_cancelled:
+                self.finished.emit(-2, total_scanned, "Scan abgebrochen")
+                return
             self.output_line.emit(f"Fehler bei Ausführung: {exc}")
             self.finished.emit(-1, 0, str(exc))
 
@@ -1015,7 +1029,10 @@ class AntivirusView(QWidget):
         self.card_scanned.set_value(total_scanned)
         self.card_infected.set_value(max(0, infected_count))
 
-        if infected_count > 0:
+        if infected_count == -2:
+            self.card_status.set_text("Abgebrochen", "#ea580c")
+            return
+        elif infected_count > 0:
             self.card_status.set_text("BEDROHUNG", "#ef4444")
             QMessageBox.critical(
                 self,

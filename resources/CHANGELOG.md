@@ -2,6 +2,23 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.2.7] - 2026-09-16
+
+### 🐛 Bugfixing & Stabilitätsverbesserungen
+- **Virenscanner Status- und Abbruchbehandlung:**
+  - Behebung einer Race-Condition im Antivirus-Modul: Wenn ein ClamAV-Scan durch den Benutzer vorzeitig abgebrochen wird, bleibt der Status auf „Abgebrochen“ erhalten und wird nicht mehr fälschlicherweise durch den Beendigungs-Handler auf „SAUBER“ überschrieben.
+  - Zuverlässiger Abbruch von Hintergrundprozessen: `ClamScanWorker`, `ProcessStreamWorker` und `BatchUpdateWorker` nutzen nun einen sauberen Terminierungsablauf (`terminate()` mit 1 Sekunde Timeout und anschließendem `kill()` Fallback), um verwaiste Prozesse zuverlässig zu beenden.
+- **Scanner-Service Fehlerbehandlung:**
+  - Vorabinitialisierung von `stdout` und `stderr` in `ScanWorker.run()`, wodurch `UnboundLocalError` bei unerwartetem Ausgang oder ungültiger JSON-Ausgabe verhindert wird.
+- **Firewall-Regelverwaltung Fallback:**
+  - Robuster Fallback in `FirewallService.delete_rule`: Schlägt das Löschen einer Regel mit angehängtem Kommentar fehl, wird automatisch ein erneuter Löschversuch ohne Kommentarparameter ausgeführt, um Formatierungsunterschiede in UFW auszugleichen.
+- **CLI & Updater Parameterharmonisierung:**
+  - Ergänzung des Parameters `--token` im CLI-Einstiegspunkt `main.py` bei Aufruf mit `--download-and-install`, um konsistentes Verhalten mit dem Standalone-Updater zu gewährleisten.
+  - Dynamischer `User-Agent` (`Cachy-Security-Suite/<version>`) in `AurDownloadDialog`.
+  - Vollständiger Schutz vor unbeabsichtigten Secret-Exposures bei Repository-Synchronisationen.
+
+---
+
 ## [1.2.5] - 2026-09-16
 
 ### 🛡️ System-Scan & Dienst-Management für den Virenscanner (ClamAV)

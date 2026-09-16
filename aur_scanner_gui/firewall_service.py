@@ -376,6 +376,9 @@ class FirewallService:
             cmd.extend(["proto", proto])
 
         if rule.comment:
-            cmd.extend(["comment", rule.comment])
+            cmd_with_comment = list(cmd) + ["comment", rule.comment]
+            ok, out = cls._run_privileged(cmd_with_comment)
+            if ok:
+                return ok, out
 
         return cls._run_privileged(cmd)
