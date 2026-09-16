@@ -160,6 +160,16 @@ def get_github_token() -> Optional[str]:
                                 return tok
         except Exception:
             pass
+    # Check config file in user config directory
+    cfg_token_path = os.path.expanduser("~/.config/cachy-security-suite/token")
+    if os.path.exists(cfg_token_path):
+        try:
+            with open(cfg_token_path, "r", encoding="utf-8") as f:
+                t = f.read().strip()
+                if t:
+                    return t
+        except Exception:
+            pass
     return None
 
 
@@ -1323,6 +1333,7 @@ class UpdateDialog(QDialog):
             asset_url = self.latest_info.github_asset_api_url if self.latest_info else ""
             tarball_url = self.latest_info.github_tarball_url if self.latest_info else ""
             updater_script = os.path.abspath(__file__)
+            tok = get_github_token()
             cmd = [
                 sys.executable,
                 updater_script,
@@ -1334,6 +1345,8 @@ class UpdateDialog(QDialog):
                 "--tarball-url",
                 tarball_url or "",
             ]
+            if tok:
+                cmd.extend(["--token", tok])
             steps.append(UpdateStep(
                 f"Cachy Security Suite v{ver} herunterladen & installieren",
                 cmd,
@@ -1370,6 +1383,7 @@ class UpdateDialog(QDialog):
                 steps.append(UpdateStep("Cachy Security Suite GUI", ["bash", installer, "--user"], "GUI Suite Update", is_gui_update=True))
             else:
                 updater_script = os.path.abspath(__file__)
+                tok = get_github_token()
                 cmd = [
                     sys.executable,
                     updater_script,
@@ -1381,6 +1395,8 @@ class UpdateDialog(QDialog):
                     "--tarball-url",
                     self.latest_info.github_tarball_url or "",
                 ]
+                if tok:
+                    cmd.extend(["--token", tok])
                 steps.append(UpdateStep(
                     f"Cachy Security Suite v{self.latest_info.gui_remote} herunterladen & installieren",
                     cmd,
@@ -1466,7 +1482,7 @@ class UpdateDialog(QDialog):
         QApplication.quit()
 
 
-def download_and_install_release(version: str = "", asset_url: str = "", tarball_url: str = "") -> int:
+def download_and_install_release(version: str = "", asset_url: str = "", tarball_url: str = "", token: str = "") -> int:
     """
     Downloads GitHub release tarball, extracts it to /tmp, and executes install.sh --user.
     Supports both public repositories and private repositories with token.
@@ -1474,7 +1490,28 @@ def download_and_install_release(version: str = "", asset_url: str = "", tarball
     import tempfile
 
     repo = get_github_repo() or DEFAULT_GITHUB_REPO
-    token = get_github_token()
+    token = token.strip() if token else (get_github_token() or "")
+
+    # Always fetch latest live asset url directly from GitHub API when token is present
+    if token:
+        try:
+            tag_slug = f"tags/v{version}" if version and not version.startswith("v") else (f"tags/{version}" if version else "latest")
+            api_rel = f"https://api.github.com/repos/{repo}/releases/{tag_slug}"
+            req = urllib.request.Request(api_rel, headers={
+                "User-Agent": "cachy-security-suite",
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json"
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+                version = data.get("tag_name", "").lstrip("v").strip() or version
+                for asset in data.get("assets", []):
+                    if asset.get("name", "").endswith((".tar.gz", ".zip")):
+                        asset_url = asset.get("url", "")
+                        tarball_url = asset.get("browser_download_url", "")
+                        break
+        except Exception as e:
+            pass
 
     if not version:
         try:
@@ -1526,15 +1563,26 @@ def download_and_install_release(version: str = "", asset_url: str = "", tarball
                 download_ok = True
 
         if not download_ok:
+            class NoAuthRedirect(urllib.request.HTTPRedirectHandler):
+                def redirect_request(self, req, fp, code, msg, headers, newurl):
+                    new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+                    if new_req and "Authorization" in new_req.headers:
+                        del new_req.headers["Authorization"]
+                    return new_req
+
+            opener = urllib.request.build_opener(NoAuthRedirect)
             headers = {"User-Agent": "Cachy-Security-Suite"}
             if token and "api.github.com" in download_url:
                 headers["Authorization"] = f"Bearer {token}"
                 headers["Accept"] = "application/octet-stream"
             req = urllib.request.Request(download_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp, open(tar_path, "wb") as out_f:
-                shutil.copyfileobj(resp, out_f)
-            if os.path.exists(tar_path) and os.path.getsize(tar_path) > 1000:
-                download_ok = True
+            try:
+                with opener.open(req, timeout=30) as resp, open(tar_path, "wb") as out_f:
+                    shutil.copyfileobj(resp, out_f)
+                if os.path.exists(tar_path) and os.path.getsize(tar_path) > 1000:
+                    download_ok = True
+            except Exception as e:
+                print(f"[Hinweis] urllib Download: {e}")
 
         if not download_ok:
             print("[FEHLER] Herunterladen des Release-Archivs fehlgeschlagen.")
@@ -1589,7 +1637,8 @@ if __name__ == "__main__":
         parser.add_argument("--version", default="")
         parser.add_argument("--asset-url", default="")
         parser.add_argument("--tarball-url", default="")
+        parser.add_argument("--token", default="")
         args, _ = parser.parse_known_args()
         if args.download_and_install:
-            sys.exit(download_and_install_release(args.version, args.asset_url, args.tarball_url))
+            sys.exit(download_and_install_release(args.version, args.asset_url, args.tarball_url, args.token))
 
