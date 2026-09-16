@@ -136,12 +136,22 @@ try:
 except Exception:
     pass
 
-# Lese Changelog Body
+# Lese Changelog Body (nur die aktuelle Version für das GitHub-Release)
 body = ''
 changelog_path = os.path.join(DIR, 'CHANGELOG.md')
 if os.path.exists(changelog_path):
     with open(changelog_path, 'r', encoding='utf-8') as f:
-        body = f.read()
+        full_changelog = f.read()
+    v_clean = TARGET_VER.lstrip('v').strip()
+    pattern = rf'(##\s*\[v?{re.escape(v_clean)}\][^\n]*\n)(.*?)(?=\n##\s*\[|\Z)'
+    m = re.search(pattern, full_changelog, re.DOTALL)
+    if m:
+        header = m.group(1).strip()
+        content = m.group(2).strip()
+        content = re.sub(r'\n*---\s*$', '', content).strip()
+        body = f'{header}\n\n{content}'.strip()
+    else:
+        body = full_changelog.strip()
 
 headers = {
     'Authorization': f'Bearer {token}',
@@ -165,7 +175,22 @@ try:
 except Exception:
     pass
 
-if not rel_id:
+if rel_id:
+    # Release existiert: Changelog der aktuellen Version via PATCH aktualisieren
+    patch_payload = {
+        'tag_name': TAG,
+        'name': f'Cachy Security Suite {TAG}',
+        'body': body,
+    }
+    patch_req = urllib.request.Request(
+        f'https://api.github.com/repos/{repo}/releases/{rel_id}',
+        data=json.dumps(patch_payload).encode('utf-8'),
+        headers={**headers, 'Content-Type': 'application/json'},
+        method='PATCH'
+    )
+    with urllib.request.urlopen(patch_req) as resp:
+        print(f'Release {TAG} aktualisiert (nur Changelog der aktuellen Version hinterlegt).')
+else:
     # Neues Release anlegen
     payload = {
         'tag_name': TAG,
