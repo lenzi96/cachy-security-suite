@@ -96,6 +96,7 @@ import urllib.request, urllib.parse, json, os, re, sys
 
 DIR = '$DIR'
 TAG = 'v$TARGET_VER'
+TARGET_VER = '$TARGET_VER'
 TAR_PATH = '$TARBALL'
 
 # Ermittle GitHub Token
