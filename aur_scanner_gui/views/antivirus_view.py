@@ -304,8 +304,8 @@ class AntivirusView(QWidget):
                 padding: 4px;
             }
         """)
-        s_layout = QHBoxLayout(sel_card)
-        s_layout.setContentsMargins(12, 10, 12, 10)
+        s_layout = QVBoxLayout(sel_card)
+        s_layout.setContentsMargins(14, 12, 14, 12)
         s_layout.setSpacing(10)
 
         self.path_input = QLineEdit()
@@ -374,6 +374,14 @@ class AntivirusView(QWidget):
         """)
         self.btn_system_scan.clicked.connect(self.show_system_scan_menu)
 
+        row_top = QHBoxLayout()
+        row_top.setSpacing(8)
+        row_top.addWidget(self.path_input, stretch=1)
+        row_top.addWidget(btn_file)
+        row_top.addWidget(btn_dir)
+        row_top.addWidget(self.btn_system_scan)
+        s_layout.addLayout(row_top)
+
         self.scan_mode_combo = QComboBox()
         self.scan_mode_combo.addItem("ClamAV Viren-Scan", "clamav")
         self.scan_mode_combo.addItem("SHA-256 & Hash-Audit", "hash")
@@ -396,10 +404,10 @@ class AntivirusView(QWidget):
             }
         """)
 
-        self.chk_infected_only = QCheckBox("Nur Funde (-i)")
+        self.chk_infected_only = QCheckBox("Nur Funde protokollieren (-i)")
         self.chk_infected_only.setChecked(True)
         self.chk_infected_only.setToolTip("Protokolliert nur infizierte oder verdächtige Dateien (empfohlen für System-Scans)")
-        self.chk_infected_only.setStyleSheet("color: palette(text); font-size: 11px;")
+        self.chk_infected_only.setStyleSheet("color: #94a3b8; font-size: 12px; font-weight: 500;")
 
         self.btn_scan = QPushButton("  Scan starten")
         self.btn_scan.setIcon(QIcon.fromTheme("security-high"))
@@ -438,14 +446,14 @@ class AntivirusView(QWidget):
         """)
         self.btn_stop.clicked.connect(self.stop_scan)
 
-        s_layout.addWidget(self.path_input, stretch=3)
-        s_layout.addWidget(btn_file)
-        s_layout.addWidget(btn_dir)
-        s_layout.addWidget(self.btn_system_scan)
-        s_layout.addWidget(self.scan_mode_combo)
-        s_layout.addWidget(self.chk_infected_only)
-        s_layout.addWidget(self.btn_scan)
-        s_layout.addWidget(self.btn_stop)
+        row_bottom = QHBoxLayout()
+        row_bottom.setSpacing(12)
+        row_bottom.addWidget(self.scan_mode_combo)
+        row_bottom.addWidget(self.chk_infected_only)
+        row_bottom.addStretch(1)
+        row_bottom.addWidget(self.btn_scan)
+        row_bottom.addWidget(self.btn_stop)
+        s_layout.addLayout(row_bottom)
 
         layout.addWidget(sel_card)
 
