@@ -14,6 +14,11 @@ import urllib.request
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
+# Ensure parent directory of aur_scanner_gui is in sys.path
+_pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _pkg_root not in sys.path:
+    sys.path.insert(0, _pkg_root)
+
 from PyQt6.QtCore import QDateTime, QProcess, QSettings, QSize, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon, QTextCharFormat, QTextCursor
 from PyQt6.QtWidgets import (
@@ -420,6 +425,13 @@ class BatchUpdateWorker(QThread):
             self.output_line.emit(f"Befehl: {' '.join(step.command)}")
             self.output_line.emit(f"=======================================================\n")
 
+            env = os.environ.copy()
+            _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if "PYTHONPATH" in env and env["PYTHONPATH"]:
+                env["PYTHONPATH"] = f"{_pkg_root}:{env['PYTHONPATH']}"
+            else:
+                env["PYTHONPATH"] = _pkg_root
+
             try:
                 self.process = subprocess.Popen(
                     step.command,
@@ -428,6 +440,7 @@ class BatchUpdateWorker(QThread):
                     text=True,
                     bufsize=1,
                     universal_newlines=True,
+                    env=env,
                 )
 
                 if self.process.stdout:
@@ -1309,10 +1322,10 @@ class UpdateDialog(QDialog):
             ver = self.latest_info.gui_remote if self.latest_info else aur_scanner_gui.__version__
             asset_url = self.latest_info.github_asset_api_url if self.latest_info else ""
             tarball_url = self.latest_info.github_tarball_url if self.latest_info else ""
+            updater_script = os.path.abspath(__file__)
             cmd = [
                 sys.executable,
-                "-m",
-                "aur_scanner_gui.updater",
+                updater_script,
                 "--download-and-install",
                 "--version",
                 ver,
@@ -1356,10 +1369,10 @@ class UpdateDialog(QDialog):
             if os.path.exists(installer) and os.path.isdir(os.path.join(source_dir, ".git")):
                 steps.append(UpdateStep("Cachy Security Suite GUI", ["bash", installer, "--user"], "GUI Suite Update", is_gui_update=True))
             else:
+                updater_script = os.path.abspath(__file__)
                 cmd = [
                     sys.executable,
-                    "-m",
-                    "aur_scanner_gui.updater",
+                    updater_script,
                     "--download-and-install",
                     "--version",
                     self.latest_info.gui_remote,

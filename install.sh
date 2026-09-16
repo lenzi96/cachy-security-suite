@@ -90,12 +90,30 @@ fi
 # Create launcher executable
 cat <<EOF > "$BIN_DIR/cachy-security-suite"
 #!/usr/bin/env bash
+export PYTHONPATH="$SHARE_DIR:\$PYTHONPATH"
 exec python3 "$SHARE_DIR/main.py" "\$@"
 EOF
 chmod +x "$BIN_DIR/cachy-security-suite"
 
 # Compatibility symlink/launcher
 ln -sf "$BIN_DIR/cachy-security-suite" "$BIN_DIR/aur-scanner-gui" 2>/dev/null || cp "$BIN_DIR/cachy-security-suite" "$BIN_DIR/aur-scanner-gui"
+
+# Register module path in Python site-packages (.pth) so python3 -m aur_scanner_gui works anywhere
+if [ "$INSTALL_USER" = true ]; then
+    USER_SITE=$(python3 -c "import site; print(site.getusersitepackages())" 2>/dev/null || true)
+    if [ -n "$USER_SITE" ]; then
+        mkdir -p "$USER_SITE" 2>/dev/null || true
+        echo "$SHARE_DIR" > "$USER_SITE/cachy-security-suite.pth" 2>/dev/null || true
+    fi
+else
+    PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
+    if [ -n "$PY_VER" ]; then
+        SYS_SITE="/usr/lib/python${PY_VER}/site-packages"
+        if [ -d "$SYS_SITE" ]; then
+            echo "$SHARE_DIR" > "$SYS_SITE/cachy-security-suite.pth" 2>/dev/null || true
+        fi
+    fi
+fi
 
 # Create Desktop entry
 cat <<EOF > "$APP_DIR/cachy-security-suite.desktop"
