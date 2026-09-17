@@ -7,6 +7,6 @@ Icon=/run/media/julian/HDD/Linux/aur-scanner-gui/resources/aur-scanner-256.png
 Terminal=false
 Type=Application
 Categories=System;Security;Utility;
-Keywords=cachy;cachyos;security;scanner;aur;clamav;antivirus;arch;pkgbuild;pacman;
+Keywords=cachy;cachyos;security;scanner;aur;clamav;antivirus;arch;pkgbuild;pacman;aur-scanner-gui;
 StartupNotify=true
 StartupWMClass=cachy-security-suite

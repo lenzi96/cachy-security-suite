@@ -136,11 +136,11 @@ StartupWMClass=cachy-security-suite
                     f.write(desktop_content)
                 self.log_line.emit(f"Desktop-Datei erstellt: {desktop_path}")
 
-                # Compatibility desktop entry
+                # Remove legacy desktop entry to avoid duplicate entries in application launcher
                 legacy_desktop = os.path.join(app_dir, "aur-scanner-gui.desktop")
                 try:
-                    with open(legacy_desktop, "w", encoding="utf-8") as f:
-                        f.write(desktop_content)
+                    if os.path.exists(legacy_desktop):
+                        os.remove(legacy_desktop)
                 except Exception:
                     pass
 

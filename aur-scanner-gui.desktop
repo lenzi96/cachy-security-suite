@@ -6,6 +6,7 @@ Exec=/run/media/julian/HDD/Linux/aur-scanner-gui/cachy-security-suite
 Icon=/run/media/julian/HDD/Linux/aur-scanner-gui/resources/aur-scanner-256.png
 Terminal=false
 Type=Application
+NoDisplay=true
 Categories=System;Security;Utility;
 Keywords=aur;scanner;security;arch;pkgbuild;pacman;yay;paru;
 StartupNotify=true

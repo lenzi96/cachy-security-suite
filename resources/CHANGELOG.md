@@ -2,6 +2,17 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.3.1] - 2026-09-17
+
+### 🐛 Fehlerbehebung: Doppelter Eintrag im Anwendungsmenü
+- **Bereinigung redundanter Desktop-Dateien:**
+  - Beseitigung der doppelten Verknüpfung im Anwendungsstarter (Kickoff / KRunner / GNOME / Desktop-Menüs).
+  - In `install.sh`, `installer.py` und `PKGBUILD` wird nun ausschließlich `cachy-security-suite.desktop` installiert; alte `aur-scanner-gui.desktop` Dateien werden automatisch bereinigt.
+  - Die Datei `aur-scanner-gui.desktop` wurde vorsorglich mit `NoDisplay=true` versehen.
+  - `aur-scanner-gui` ist weiterhin als Suchbegriff (`Keywords`) in `cachy-security-suite.desktop` hinterlegt, sodass die Suche über beide Bezeichnungen funktioniert.
+
+---
+
 ## [1.3.0] - 2026-09-17
 
 ### 🛠️ Nahtlose Setup- & Update-Integration für Polkit-Regeln

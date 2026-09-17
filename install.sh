@@ -187,13 +187,13 @@ Icon=aur-scanner
 Terminal=false
 Type=Application
 Categories=System;Security;Utility;
-Keywords=cachy;cachyos;security;scanner;aur;clamav;antivirus;arch;pkgbuild;pacman;
+Keywords=cachy;cachyos;security;scanner;aur;clamav;antivirus;arch;pkgbuild;pacman;aur-scanner-gui;
 StartupNotify=true
 StartupWMClass=cachy-security-suite
 EOF
 
-# Compatibility desktop entry
-cp "$APP_DIR/cachy-security-suite.desktop" "$APP_DIR/aur-scanner-gui.desktop" 2>/dev/null || true
+# Remove legacy desktop entry to avoid duplicate entries in application launcher
+rm -f "$APP_DIR/aur-scanner-gui.desktop" 2>/dev/null || true
 
 # 5. Updating caches
 echo -e "\n${COLOR_BLUE}[5/5] Aktualisiere System-Caches...${COLOR_RESET}"
