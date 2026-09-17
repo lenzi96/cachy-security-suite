@@ -40,6 +40,7 @@ from PyQt6.QtWidgets import (
 )
 
 import aur_scanner_gui
+from aur_scanner_gui.widgets.toggle_switch import ToggleSwitch
 
 
 @dataclass
@@ -895,23 +896,39 @@ class UpdateDialog(QDialog):
         self.btn_update_clam.clicked.connect(self.update_clamav)
         c3_buttons.addWidget(self.btn_update_clam)
 
-        self.btn_enable_service = QPushButton("Dienst aktivieren")
-        self.btn_enable_service.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_enable_service.setVisible(False)
-        self.btn_enable_service.setStyleSheet("""
-            QPushButton {
-                padding: 4px 10px;
-                border-radius: 5px;
-                border: 1px solid #3b82f6;
-                background: rgba(59, 130, 246, 0.1);
-                color: #3b82f6;
-                font-size: 10px;
-                font-weight: 600;
+        # Freshclam Service Schiebeschalter (Toggle Switch)
+        self.c3_service_toggle_frame = QFrame()
+        self.c3_service_toggle_frame.setObjectName("c3ServiceToggleFrame")
+        self.c3_service_toggle_frame.setVisible(False)
+        self.c3_service_toggle_frame.setStyleSheet("""
+            QFrame#c3ServiceToggleFrame {
+                background: rgba(15, 23, 42, 0.75);
+                border: 1px solid #334155;
+                border-radius: 6px;
+                padding: 2px 6px;
             }
-            QPushButton:hover { background: #3b82f6; color: #ffffff; }
+            QFrame#c3ServiceToggleFrame:hover {
+                border-color: #475569;
+            }
+            QFrame#c3ServiceToggleFrame QLabel {
+                background: transparent !important;
+                border: none !important;
+            }
         """)
-        self.btn_enable_service.clicked.connect(self.enable_clamav_service)
-        c3_buttons.addWidget(self.btn_enable_service)
+        c3_s_layout = QHBoxLayout(self.c3_service_toggle_frame)
+        c3_s_layout.setContentsMargins(6, 2, 6, 2)
+        c3_s_layout.setSpacing(6)
+
+        self.lbl_c3_switch_status = QLabel("Dienst: Aus")
+        self.lbl_c3_switch_status.setStyleSheet("font-size: 10px; font-weight: 600; color: #94a3b8;")
+        c3_s_layout.addWidget(self.lbl_c3_switch_status)
+
+        self.switch_c3_service = ToggleSwitch(self, width=38, height=20, active_color="#10b981", inactive_color="#334155")
+        self.switch_c3_service.setToolTip("Freshclam-Hintergrunddienst (clamav-freshclam.service) ein- oder ausschalten")
+        self.switch_c3_service.clicked.connect(self.enable_clamav_service)
+        c3_s_layout.addWidget(self.switch_c3_service)
+
+        c3_buttons.addWidget(self.c3_service_toggle_frame)
 
         c3_layout.addLayout(c3_buttons)
         layout.addWidget(card_clam)
@@ -1152,60 +1169,33 @@ class UpdateDialog(QDialog):
             self.badge_c3.setText("Nicht installiert")
             self.badge_c3.setStyleSheet("background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
             self.btn_update_clam.setEnabled(False)
-            self.btn_enable_service.setVisible(False)
+            self.c3_service_toggle_frame.setVisible(False)
         else:
             self.btn_update_clam.setEnabled(True)
+            self.c3_service_toggle_frame.setVisible(True)
             age_text = f"Vor {info.clamav_db_age_days} Tag(en)" if info.clamav_db_age_days > 0 else "Heute"
             self.lbl_c3_status.setText(f"Signaturen: {info.clamav_db_date_str} ({age_text})  │  Daily DB: {info.clamav_db_version}")
 
+            is_active_or_enabled = info.clamav_service_active or info.clamav_service_enabled
+            self.switch_c3_service.blockSignals(True)
+            self.switch_c3_service.setChecked(is_active_or_enabled, animated=False)
+            self.switch_c3_service.blockSignals(False)
+
             if info.clamav_service_active:
                 srv_msg = "✓ Hintergrunddienst aktiv (automatische Updates)"
-                self.btn_enable_service.setText("Dienst löschen")
-                self.btn_enable_service.setStyleSheet("""
-                    QPushButton {
-                        padding: 4px 10px;
-                        border-radius: 5px;
-                        border: 1px solid #dc2626;
-                        background: rgba(220, 38, 38, 0.1);
-                        color: #ef4444;
-                        font-size: 10px;
-                        font-weight: 600;
-                    }
-                    QPushButton:hover { background: #dc2626; color: #ffffff; }
-                """)
-                self.btn_enable_service.setVisible(True)
+                self.lbl_c3_switch_status.setText("Dienst: Aktiv")
+                self.lbl_c3_switch_status.setStyleSheet("font-size: 10px; font-weight: 700; color: #10b981;")
+                self.c3_service_toggle_frame.setToolTip("Hintergrunddienst ist aktiv und im Autostart. Schiebeschalter umlegen, um ihn zu stoppen und dauerhaft zu löschen.")
             elif info.clamav_service_enabled:
                 srv_msg = "Dienst aktiviert (wartet auf Timer)"
-                self.btn_enable_service.setText("Dienst löschen")
-                self.btn_enable_service.setStyleSheet("""
-                    QPushButton {
-                        padding: 4px 10px;
-                        border-radius: 5px;
-                        border: 1px solid #dc2626;
-                        background: rgba(220, 38, 38, 0.1);
-                        color: #ef4444;
-                        font-size: 10px;
-                        font-weight: 600;
-                    }
-                    QPushButton:hover { background: #dc2626; color: #ffffff; }
-                """)
-                self.btn_enable_service.setVisible(True)
+                self.lbl_c3_switch_status.setText("Dienst: Aktiv")
+                self.lbl_c3_switch_status.setStyleSheet("font-size: 10px; font-weight: 700; color: #10b981;")
+                self.c3_service_toggle_frame.setToolTip("Hintergrunddienst ist aktiviert. Schiebeschalter umlegen, um ihn zu stoppen und dauerhaft zu löschen.")
             else:
                 srv_msg = "⚠ Hintergrunddienst inaktiv (keine autom. Aktualisierung)"
-                self.btn_enable_service.setText("Dienst aktivieren")
-                self.btn_enable_service.setStyleSheet("""
-                    QPushButton {
-                        padding: 4px 10px;
-                        border-radius: 5px;
-                        border: 1px solid #3b82f6;
-                        background: rgba(59, 130, 246, 0.1);
-                        color: #3b82f6;
-                        font-size: 10px;
-                        font-weight: 600;
-                    }
-                    QPushButton:hover { background: #3b82f6; color: #ffffff; }
-                """)
-                self.btn_enable_service.setVisible(True)
+                self.lbl_c3_switch_status.setText("Dienst: Inaktiv")
+                self.lbl_c3_switch_status.setStyleSheet("font-size: 10px; font-weight: 600; color: #94a3b8;")
+                self.c3_service_toggle_frame.setToolTip("Hintergrunddienst ist inaktiv. Schiebeschalter umlegen, um automatische Signatur-Updates zu aktivieren.")
             self.lbl_c3_service.setText(srv_msg)
 
             if info.clamav_needs_update:
