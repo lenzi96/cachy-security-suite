@@ -33,6 +33,7 @@ from PyQt6.QtWidgets import (
 )
 
 from aur_scanner_gui.widgets.status_card import StatusCard
+from aur_scanner_gui.widgets.toggle_switch import ToggleSwitch
 
 
 class ClamScanWorker(QThread):
@@ -287,22 +288,37 @@ class AntivirusView(QWidget):
         self.btn_update_sigs.clicked.connect(self.run_freshclam)
         e_layout.addWidget(self.btn_update_sigs)
 
-        self.btn_service_action = QPushButton("Freshclam-Dienst")
-        self.btn_service_action.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_service_action.setStyleSheet("""
-            QPushButton {
-                padding: 6px 14px;
-                border-radius: 6px;
-                border: 1px solid #7f1d1d;
-                background: rgba(239, 68, 68, 0.12);
-                color: #f87171;
-                font-size: 11px;
-                font-weight: 600;
+        # Freshclam-Hintergrunddienst Schiebeschalter
+        self.service_toggle_frame = QFrame()
+        self.service_toggle_frame.setObjectName("serviceToggleFrame")
+        self.service_toggle_frame.setStyleSheet("""
+            QFrame#serviceToggleFrame {
+                background: rgba(15, 23, 42, 0.75);
+                border: 1px solid #334155;
+                border-radius: 7px;
             }
-            QPushButton:hover { background: #dc2626; color: #ffffff; border-color: #ef4444; }
+            QFrame#serviceToggleFrame:hover {
+                border-color: #475569;
+            }
+            QFrame#serviceToggleFrame QLabel {
+                background: transparent !important;
+                border: none !important;
+            }
         """)
-        self.btn_service_action.clicked.connect(self.toggle_freshclam_service)
-        e_layout.addWidget(self.btn_service_action)
+        s_layout = QHBoxLayout(self.service_toggle_frame)
+        s_layout.setContentsMargins(10, 4, 10, 4)
+        s_layout.setSpacing(10)
+
+        self.lbl_service_status = QLabel("Hintergrunddienst: Inaktiv")
+        self.lbl_service_status.setStyleSheet("font-size: 11px; font-weight: 600; color: #94a3b8;")
+        s_layout.addWidget(self.lbl_service_status)
+
+        self.switch_service = ToggleSwitch(self, width=42, height=22, active_color="#10b981", inactive_color="#334155")
+        self.switch_service.setToolTip("Freshclam-Hintergrunddienst (clamav-freshclam.service) ein- oder ausschalten")
+        self.switch_service.clicked.connect(self.toggle_freshclam_service)
+        s_layout.addWidget(self.switch_service)
+
+        e_layout.addWidget(self.service_toggle_frame)
 
         self.refresh_engine_status()
         layout.addWidget(self.engine_card)
@@ -646,6 +662,8 @@ class AntivirusView(QWidget):
                     self.txt_log.append(f"Fehler: {exc}\n")
                     QMessageBox.warning(self, "Fehler", str(exc))
                 self.refresh_engine_status()
+            else:
+                self.refresh_engine_status()
         else:
             reply = QMessageBox.question(
                 self,
@@ -674,6 +692,8 @@ class AntivirusView(QWidget):
                 except Exception as exc:
                     self.txt_log.append(f"Fehler: {exc}\n")
                     QMessageBox.warning(self, "Fehler", str(exc))
+                self.refresh_engine_status()
+            else:
                 self.refresh_engine_status()
 
     def show_system_scan_menu(self):
@@ -748,38 +768,20 @@ class AntivirusView(QWidget):
         srv_status = self.check_freshclam_service_status()
 
         self.btn_update_sigs.setEnabled(has_fresh)
-        self.btn_service_action.setEnabled(has_fresh or has_clam)
+        is_active_or_enabled = srv_status["active"] or srv_status["enabled"]
+        self.switch_service.setEnabled(has_fresh or has_clam)
+        self.switch_service.blockSignals(True)
+        self.switch_service.setChecked(is_active_or_enabled, animated=False)
+        self.switch_service.blockSignals(False)
 
-        if srv_status["active"] or srv_status["enabled"]:
-            self.btn_service_action.setText("🗑️ Freshclam-Dienst löschen")
-            self.btn_service_action.setToolTip("Hintergrunddienst ist aktiv/aktiviert. Klicken, um ihn sofort zu beenden und dauerhaft zu löschen/deaktivieren.")
-            self.btn_service_action.setStyleSheet("""
-                QPushButton {
-                    padding: 6px 14px;
-                    border-radius: 6px;
-                    border: 1px solid #7f1d1d;
-                    background: rgba(239, 68, 68, 0.12);
-                    color: #f87171;
-                    font-size: 11px;
-                    font-weight: 600;
-                }
-                QPushButton:hover { background: #dc2626; color: #ffffff; border-color: #ef4444; }
-            """)
+        if is_active_or_enabled:
+            self.lbl_service_status.setText("Hintergrunddienst: Aktiv")
+            self.lbl_service_status.setStyleSheet("font-size: 11px; font-weight: 700; color: #10b981;")
+            self.service_toggle_frame.setToolTip("Hintergrunddienst (clamav-freshclam.service) ist aktiv und im Autostart.\nSchiebeschalter betätigen, um ihn zu stoppen und dauerhaft zu löschen.")
         else:
-            self.btn_service_action.setText("⚙️ Freshclam-Dienst aktivieren")
-            self.btn_service_action.setToolTip("Hintergrunddienst ist inaktiv. Klicken, um automatische Updates im Hintergrund zu aktivieren.")
-            self.btn_service_action.setStyleSheet("""
-                QPushButton {
-                    padding: 6px 14px;
-                    border-radius: 6px;
-                    border: 1px solid #1e3a8a;
-                    background: rgba(59, 130, 246, 0.1);
-                    color: #60a5fa;
-                    font-size: 11px;
-                    font-weight: 600;
-                }
-                QPushButton:hover { background: #2563eb; color: #ffffff; border-color: #3b82f6; }
-            """)
+            self.lbl_service_status.setText("Hintergrunddienst: Inaktiv")
+            self.lbl_service_status.setStyleSheet("font-size: 11px; font-weight: 600; color: #94a3b8;")
+            self.service_toggle_frame.setToolTip("Hintergrunddienst (clamav-freshclam.service) ist deaktiviert.\nSchiebeschalter betätigen, um automatische Signatur-Updates im Hintergrund zu aktivieren.")
 
         srv_text = " (Hintergrunddienst aktiv)" if srv_status["active"] else (" (Dienst deaktiviert)" if not srv_status["enabled"] else " (Dienst wartet)")
 

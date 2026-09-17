@@ -1,6 +1,6 @@
 # Maintainer: Julian
 pkgname=cachy-security-suite
-pkgver=1.2.7
+pkgver=1.2.8
 pkgrel=1
 pkgdesc="Modern PyQt6 graphical security & audit suite for Arch Linux & CachyOS"
 arch=('any')

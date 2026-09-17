@@ -2,6 +2,19 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.2.8] - 2026-09-17
+
+### 🎚️ Schiebeschalter für den Freshclam-Hintergrunddienst
+- **Eleganter Schiebeschalter (Toggle Switch):**
+  - Der bisherige Aktions-Button im Virenscanner-Banner wurde durch einen modernen, interaktiven Schiebeschalter (`ToggleSwitch`) mit sanfter Übergangsanimation ersetzt.
+  - **Live-Statusanzeige:** Direkte Kennzeichnung des Dienstzustands (`Hintergrunddienst: Aktiv` in Smaragdgrün bzw. `Hintergrunddienst: Inaktiv` in Schiefergrau).
+  - **Sichere Bedienung:**
+    - Beim Einschalten: Bestätigungsdialog zur Aktivierung und anschließend polkit-autorisierter Start (`pkexec systemctl enable --now clamav-freshclam.service`).
+    - Beim Ausschalten: Bestätigungsdialog zum Stoppen und dauerhaften Entfernen aus dem Autostart (`pkexec systemctl disable --now clamav-freshclam.service`).
+    - Bricht der Benutzer den Bestätigungsdialog ab oder schlägt der Vorgang fehl, federt der Schalter automatisch verzögerungsfrei auf den tatsächlichen Systemd-Zustand zurück.
+
+---
+
 ## [1.2.7] - 2026-09-16
 
 ### 🐛 Bugfixing & Stabilitätsverbesserungen
