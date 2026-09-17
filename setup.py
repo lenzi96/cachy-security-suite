@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cachy-security-suite",
-    version="1.2.9",
+    version="1.3.0",
     description="Modern PyQt6 graphical security & audit suite for Arch Linux & CachyOS",
     author="Julian",
     license="GPL-3.0-or-later",

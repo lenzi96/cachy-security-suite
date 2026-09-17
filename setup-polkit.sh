@@ -44,6 +44,7 @@ if [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
     if [ "$REMOVED" -eq 0 ]; then
         echo "Keine installierten Regeln gefunden."
     else
+        rm -f "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
         echo "✓ Alle Berechtigungen wurden erfolgreich entfernt."
     fi
     exit 0
@@ -98,6 +99,12 @@ elif [ ! -d "$SUDOERS_DIR" ]; then
 elif [ ! -f "$SRC_SUDOERS" ]; then
     echo "WARNUNG: Sudoers-Quelldatei nicht gefunden ($SRC_SUDOERS)!"
 fi
+
+# Create marker file for fast unprivileged status checking
+mkdir -p "/etc/cachy-security-suite" 2>/dev/null || true
+touch "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
+chmod 755 "/etc/cachy-security-suite" 2>/dev/null || true
+chmod 644 "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
 
 echo ""
 echo "===================================================="

@@ -94,7 +94,7 @@ SUDOERS_DIR="/etc/sudoers.d"
 SUDOERS_TARGET="$SUDOERS_DIR/99-cachy-security-suite"
 
 if [ "$1" = "--uninstall" ]; then
-    rm -f "$POLKIT_TARGET" "$SUDOERS_TARGET"
+    rm -f "$POLKIT_TARGET" "$SUDOERS_TARGET" "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
     echo "✓ Regeln erfolgreich entfernt."
     exit 0
 fi
@@ -111,6 +111,9 @@ if [ -d "$SUDOERS_DIR" ]; then
     chown root:root "$SUDOERS_TARGET" 2>/dev/null || true
     echo "✓ Sudoers-Drop-in installiert."
 fi
+mkdir -p "/etc/cachy-security-suite" 2>/dev/null || true
+touch "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
+chmod 644 "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
 echo "✓ Konfiguration abgeschlossen."
 """
                 with open(script_path, "w") as f:

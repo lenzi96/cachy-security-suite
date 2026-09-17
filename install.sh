@@ -17,10 +17,30 @@ echo -e "${COLOR_BLUE}====================================================${COLO
 echo -e "${COLOR_BLUE}   Cachy Security Suite - Installationsprogramm     ${COLOR_RESET}"
 echo -e "${COLOR_BLUE}====================================================${COLOR_RESET}\n"
 
-# Determine install prefix
+# Determine install prefix & options
 INSTALL_USER=false
-if [ "$1" = "--user" ] || [ "$EUID" -ne 0 ]; then
+WITH_POLKIT=false
+NO_POLKIT=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --user)
+            INSTALL_USER=true
+            ;;
+        --with-polkit|--setup-polkit)
+            WITH_POLKIT=true
+            ;;
+        --no-polkit|--without-polkit)
+            NO_POLKIT=true
+            ;;
+    esac
+done
+
+if [ "$EUID" -ne 0 ]; then
     INSTALL_USER=true
+fi
+
+if [ "$INSTALL_USER" = true ]; then
     PREFIX="$HOME/.local"
     BIN_DIR="$PREFIX/bin"
     SHARE_DIR="$PREFIX/share/cachy-security-suite"
@@ -37,7 +57,7 @@ else
 fi
 
 # 1. Dependency checks
-echo -e "\n${COLOR_BLUE}[1/4] Prüfe System-Abhängigkeiten...${COLOR_RESET}"
+echo -e "\n${COLOR_BLUE}[1/5] Prüfe System-Abhängigkeiten...${COLOR_RESET}"
 
 MISSING_DEPS=0
 
@@ -63,13 +83,13 @@ else
 fi
 
 # 2. Creating target directories
-echo -e "\n${COLOR_BLUE}[2/4] Erstelle Zielverzeichnisse...${COLOR_RESET}"
+echo -e "\n${COLOR_BLUE}[2/5] Erstelle Zielverzeichnisse...${COLOR_RESET}"
 mkdir -p "$BIN_DIR" "$SHARE_DIR" "$APP_DIR" "$ICON_DIR"
 
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 3. Copying files
-echo -e "\n${COLOR_BLUE}[3/4] Kopiere Anwendungsdateien...${COLOR_RESET}"
+echo -e "\n${COLOR_BLUE}[3/5] Kopiere Anwendungsdateien...${COLOR_RESET}"
 cp -r "$SOURCE_DIR/aur_scanner_gui" "$SHARE_DIR/"
 cp "$SOURCE_DIR/main.py" "$SHARE_DIR/"
 chmod +x "$SHARE_DIR/main.py"
@@ -117,9 +137,11 @@ else
             echo "$SHARE_DIR" > "$SYS_SITE/cachy-security-suite.pth" 2>/dev/null || true
         fi
     fi
+fi
 
-    # Automatically install Polkit & Sudoers rules in system mode
-    echo -e "\n${COLOR_BLUE}Richte Polkit- & Sudoers-Berechtigungen ein...${COLOR_RESET}"
+# 4. Polkit & Sudoers Berechtigungen
+echo -e "\n${COLOR_BLUE}[4/5] Richte Polkit- & Sudoers-Berechtigungen ein...${COLOR_RESET}"
+if [ "$INSTALL_USER" = false ]; then
     if [ -d "/etc/polkit-1/rules.d" ] && [ -f "$SOURCE_DIR/resources/49-cachy-security-suite.rules" ]; then
         cp "$SOURCE_DIR/resources/49-cachy-security-suite.rules" "/etc/polkit-1/rules.d/49-cachy-security-suite.rules"
         chmod 644 "/etc/polkit-1/rules.d/49-cachy-security-suite.rules"
@@ -131,6 +153,26 @@ else
         chmod 440 "/etc/sudoers.d/99-cachy-security-suite"
         chown root:root "/etc/sudoers.d/99-cachy-security-suite" 2>/dev/null || true
         echo -e "${COLOR_GREEN}✓ Sudoers-Drop-in nach /etc/sudoers.d/ installiert.${COLOR_RESET}"
+    fi
+    mkdir -p "/etc/cachy-security-suite" 2>/dev/null || true
+    touch "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
+    chmod 755 "/etc/cachy-security-suite" 2>/dev/null || true
+    chmod 644 "/etc/cachy-security-suite/polkit-configured" 2>/dev/null || true
+else
+    # User-Mode: check if configured or run setup
+    if [ "$NO_POLKIT" = true ]; then
+        echo "Polkit-Einrichtung übersprungen (--no-polkit)."
+    elif [ "$WITH_POLKIT" = true ] || [ -f "/etc/cachy-security-suite/polkit-configured" ]; then
+        echo ">> Aktualisiere Polkit- & Sudoers-Regeln..."
+        bash "$SOURCE_DIR/setup-polkit.sh" || echo "Hinweis: Polkit-Einrichtung übersprungen."
+    elif [ -t 0 ]; then
+        echo -e "${COLOR_YELLOW}Möchtest du Polkit- & Sudoers-Regeln für passwortlose Aktionen (UFW, ClamAV) einrichten? [J/n]${COLOR_RESET} "
+        read -rp "> " POLKIT_ANSWER
+        if [[ ! "$POLKIT_ANSWER" =~ ^[Nn] ]]; then
+            bash "$SOURCE_DIR/setup-polkit.sh" || echo "Hinweis: Polkit-Einrichtung übersprungen."
+        fi
+    else
+        echo "Hinweis: Polkit-Regeln können im Menü Werkzeuge -> 'Passwortlose Aktionen konfigurieren' eingerichtet werden."
     fi
 fi
 
@@ -153,8 +195,8 @@ EOF
 # Compatibility desktop entry
 cp "$APP_DIR/cachy-security-suite.desktop" "$APP_DIR/aur-scanner-gui.desktop" 2>/dev/null || true
 
-# 4. Updating caches
-echo -e "\n${COLOR_BLUE}[4/4] Aktualisiere System-Caches...${COLOR_RESET}"
+# 5. Updating caches
+echo -e "\n${COLOR_BLUE}[5/5] Aktualisiere System-Caches...${COLOR_RESET}"
 if command -v update-desktop-database &>/dev/null; then
     update-desktop-database "$APP_DIR" 2>/dev/null || true
 fi

@@ -69,6 +69,7 @@ class UpdateInfo:
     clamav_needs_update: bool = False
     clamav_service_active: bool = False
     clamav_service_enabled: bool = False
+    polkit_configured: bool = False
 
     rules_count: int = 118
     check_error: Optional[str] = None
@@ -383,6 +384,12 @@ class UpdateCheckerWorker(QThread):
         else:
             info.clamav_installed = False
             info.clamav_version = "Nicht installiert"
+
+        # Check Polkit & Sudoers permissions status
+        info.polkit_configured = (
+            os.path.isfile("/etc/cachy-security-suite/polkit-configured") or
+            os.path.isfile("/usr/share/polkit-1/rules.d/49-cachy-security-suite.rules")
+        )
 
         self.finished.emit(info)
 
@@ -990,6 +997,63 @@ class UpdateDialog(QDialog):
         c4_layout.addWidget(self.btn_refresh_rules)
         layout.addWidget(card_feed)
 
+        # ----------------------------------------------------------------------
+        # Card 5: Polkit & Sudoers System Permissions
+        # ----------------------------------------------------------------------
+        card_polkit = QFrame()
+        card_polkit.setObjectName("cardPolkit")
+        card_polkit.setStyleSheet("""
+            QFrame#cardPolkit {
+                background-color: palette(base);
+                border: 1px solid palette(mid);
+                border-radius: 10px;
+            }
+            QFrame#cardPolkit QLabel { background: transparent; border: none; }
+        """)
+        c5_layout = QHBoxLayout(card_polkit)
+        c5_layout.setContentsMargins(14, 12, 14, 12)
+        c5_layout.setSpacing(12)
+
+        icon_c5 = QLabel()
+        icon_polkit_theme = QIcon.fromTheme("security-high")
+        if not icon_polkit_theme.isNull():
+            icon_c5.setPixmap(icon_polkit_theme.pixmap(36, 36))
+        else:
+            icon_c5.setText("🛡️")
+            icon_c5.setStyleSheet("font-size: 24px;")
+        c5_layout.addWidget(icon_c5)
+
+        c5_text = QVBoxLayout()
+        c5_text.setSpacing(2)
+        lbl_c5_title = QLabel("System-Rechte & Polkit-Regeln")
+        lbl_c5_title.setStyleSheet("font-size: 13px; font-weight: 700;")
+        self.lbl_c5_desc = QLabel("Passwortlose Verwaltung für Firewall (UFW) & ClamAV-Freshclam")
+        self.lbl_c5_desc.setStyleSheet("font-size: 11px; opacity: 0.8;")
+        c5_text.addWidget(lbl_c5_title)
+        c5_text.addWidget(self.lbl_c5_desc)
+        c5_layout.addLayout(c5_text, stretch=1)
+
+        self.badge_c5 = QLabel("Prüfe...")
+        self.badge_c5.setStyleSheet("background-color: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+        c5_layout.addWidget(self.badge_c5)
+
+        self.btn_manage_polkit = QPushButton("Konfigurieren...")
+        self.btn_manage_polkit.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_manage_polkit.setStyleSheet("""
+            QPushButton {
+                padding: 6px 12px;
+                border-radius: 6px;
+                border: 1px solid palette(mid);
+                background: palette(window);
+                font-size: 11px;
+                font-weight: 500;
+            }
+            QPushButton:hover { background: palette(button); }
+        """)
+        self.btn_manage_polkit.clicked.connect(self.open_polkit_setup)
+        c5_layout.addWidget(self.btn_manage_polkit)
+        layout.addWidget(card_polkit)
+
         layout.addStretch()
 
         scroll.setWidget(container)
@@ -1096,6 +1160,8 @@ class UpdateDialog(QDialog):
         self.badge_c2.setStyleSheet("background-color: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
         self.badge_c3.setText("Prüfe...")
         self.badge_c3.setStyleSheet("background-color: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+        self.badge_c5.setText("Prüfe...")
+        self.badge_c5.setStyleSheet("background-color: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
 
         self.lbl_c2_version.setText("Frage AUR RPC API ab...")
         self.lbl_status_summary.setText("Überprüfe Versionen und Virensignaturen...")
@@ -1205,6 +1271,18 @@ class UpdateDialog(QDialog):
                 self.badge_c3.setText("✓ Signaturen aktuell")
                 self.badge_c3.setStyleSheet("background-color: rgba(16, 185, 129, 0.15); color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
 
+        # 5. Polkit & Sudoers Permissions Card
+        if info.polkit_configured:
+            self.badge_c5.setText("✓ Aktiv")
+            self.badge_c5.setStyleSheet("background-color: rgba(16, 185, 129, 0.15); color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+            self.lbl_c5_desc.setText("Passwortlose Verwaltung aktiv (Gruppe: wheel/sudo)")
+            self.btn_manage_polkit.setText("Verwalten / Update")
+        else:
+            self.badge_c5.setText("⚠️ Nicht eingerichtet")
+            self.badge_c5.setStyleSheet("background-color: rgba(245, 158, 11, 0.15); color: #d97706; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px;")
+            self.lbl_c5_desc.setText("Aktionen erfordern Passwortabfragen (Empfohlen: Einrichten)")
+            self.btn_manage_polkit.setText("Jetzt einrichten")
+
         # Enable "Update All" button if any update is pending
         pending = info.total_updates_pending()
         if pending > 0:
@@ -1218,6 +1296,12 @@ class UpdateDialog(QDialog):
 
         if info.check_error:
             self.txt_log.append(f"[Hinweis] {info.check_error}\n")
+
+    def open_polkit_setup(self):
+        from aur_scanner_gui.dialogs.polkit_dialog import PolkitSetupDialog
+        dlg = PolkitSetupDialog(self)
+        dlg.exec()
+        self.start_check()
 
     # --------------------------------------------------------------------------
     # Single and Batch Actions

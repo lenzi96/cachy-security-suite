@@ -2,6 +2,22 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.3.0] - 2026-09-17
+
+### 🛠️ Nahtlose Setup- & Update-Integration für Polkit-Regeln
+- **Integration in den Installer (`install.sh`):**
+  - Polkit- & Sudoers-Regeln sind jetzt fest als Schritt `[4/5]` im Setup verankert.
+  - Bei Neuinstallation oder Update wird geprüft, ob die Regeln bereits aktiv sind: Vorhandene Regeln werden automatisch auf den neuesten Stand gebracht.
+  - Im interaktiven Modus wird der Benutzer gefragt, ob er die passwortlosen Regeln direkt einrichten möchte (`[J/n]`).
+  - Neue CLI-Flags für den Installer: `--with-polkit` zur automatisierten Einrichtung und `--no-polkit` zum Überspringen.
+- **Integration in das Sicherheits- & Update-Center (`updater.py`):**
+  - Neue Statuskarte **„System-Rechte & Polkit-Regeln“** im Update-Center.
+  - Live-Erkennung des Status: `✓ Aktiv` (wenn konfiguriert) bzw. `⚠️ Nicht eingerichtet` (inkl. Empfehlung zur Einrichtung).
+  - Direkter Absprungpunkt: Ein Klick auf „Jetzt einrichten“ bzw. „Verwalten / Update“ öffnet den Konfigurationsdialog und aktualisiert die Ansicht sofort im Anschluss.
+  - Schnelle unprivilegierte Zustandserkennung über System-Marker `/etc/cachy-security-suite/polkit-configured`.
+
+---
+
 ## [1.2.9] - 2026-09-17
 
 ### 🔑 Passwortlose Aktionen via Polkit & Sudoers Profile

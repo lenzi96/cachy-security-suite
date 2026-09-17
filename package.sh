@@ -5,7 +5,7 @@
 set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="1.2.9"
+VERSION="1.3.0"
 DIST_DIR="$DIR/dist"
 ARCHIVE_NAME="cachy-security-suite-v${VERSION}"
 TARGET_TAR="$DIST_DIR/${ARCHIVE_NAME}.tar.gz"
