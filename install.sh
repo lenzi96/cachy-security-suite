@@ -73,6 +73,10 @@ echo -e "\n${COLOR_BLUE}[3/4] Kopiere Anwendungsdateien...${COLOR_RESET}"
 cp -r "$SOURCE_DIR/aur_scanner_gui" "$SHARE_DIR/"
 cp "$SOURCE_DIR/main.py" "$SHARE_DIR/"
 chmod +x "$SHARE_DIR/main.py"
+if [ -f "$SOURCE_DIR/setup-polkit.sh" ]; then
+    cp "$SOURCE_DIR/setup-polkit.sh" "$SHARE_DIR/"
+    chmod +x "$SHARE_DIR/setup-polkit.sh"
+fi
 
 # Copy Icons
 mkdir -p "$PREFIX/share/icons/hicolor/256x256/apps" "$PREFIX/share/icons/hicolor/scalable/apps"
@@ -112,6 +116,21 @@ else
         if [ -d "$SYS_SITE" ]; then
             echo "$SHARE_DIR" > "$SYS_SITE/cachy-security-suite.pth" 2>/dev/null || true
         fi
+    fi
+
+    # Automatically install Polkit & Sudoers rules in system mode
+    echo -e "\n${COLOR_BLUE}Richte Polkit- & Sudoers-Berechtigungen ein...${COLOR_RESET}"
+    if [ -d "/etc/polkit-1/rules.d" ] && [ -f "$SOURCE_DIR/resources/49-cachy-security-suite.rules" ]; then
+        cp "$SOURCE_DIR/resources/49-cachy-security-suite.rules" "/etc/polkit-1/rules.d/49-cachy-security-suite.rules"
+        chmod 644 "/etc/polkit-1/rules.d/49-cachy-security-suite.rules"
+        chown root:root "/etc/polkit-1/rules.d/49-cachy-security-suite.rules" 2>/dev/null || true
+        echo -e "${COLOR_GREEN}✓ Polkit-Regel nach /etc/polkit-1/rules.d/ installiert.${COLOR_RESET}"
+    fi
+    if [ -d "/etc/sudoers.d" ] && [ -f "$SOURCE_DIR/resources/cachy-security-suite.sudoers" ]; then
+        cp "$SOURCE_DIR/resources/cachy-security-suite.sudoers" "/etc/sudoers.d/99-cachy-security-suite"
+        chmod 440 "/etc/sudoers.d/99-cachy-security-suite"
+        chown root:root "/etc/sudoers.d/99-cachy-security-suite" 2>/dev/null || true
+        echo -e "${COLOR_GREEN}✓ Sudoers-Drop-in nach /etc/sudoers.d/ installiert.${COLOR_RESET}"
     fi
 fi
 

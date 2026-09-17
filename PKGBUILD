@@ -1,6 +1,6 @@
 # Maintainer: Julian
 pkgname=cachy-security-suite
-pkgver=1.2.8
+pkgver=1.2.9
 pkgrel=1
 pkgdesc="Modern PyQt6 graphical security & audit suite for Arch Linux & CachyOS"
 arch=('any')
@@ -27,6 +27,15 @@ exec python3 "/usr/share/$pkgname/main.py" "\$@"
 EOF
     chmod 755 "$pkgdir/usr/bin/$pkgname"
     ln -sf "$pkgname" "$pkgdir/usr/bin/aur-scanner-gui"
+
+    # Install resources and helper script
+    install -dm755 "$pkgdir/usr/share/$pkgname/resources"
+    cp -r "resources/"* "$pkgdir/usr/share/$pkgname/resources/"
+    install -Dm755 "setup-polkit.sh" "$pkgdir/usr/share/$pkgname/setup-polkit.sh"
+
+    # Install Polkit rules & Sudoers drop-in
+    install -Dm644 "resources/49-cachy-security-suite.rules" "$pkgdir/usr/share/polkit-1/rules.d/49-cachy-security-suite.rules"
+    install -Dm440 "resources/cachy-security-suite.sudoers" "$pkgdir/etc/sudoers.d/99-cachy-security-suite"
 
     # Install icon and desktop files
     install -Dm644 "resources/aur-scanner.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/aur-scanner.svg"

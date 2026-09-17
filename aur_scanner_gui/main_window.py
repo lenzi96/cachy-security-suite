@@ -381,6 +381,12 @@ class MainWindow(QMainWindow):
         act_update.triggered.connect(self.show_update_dialog)
         tools_menu.addAction(act_update)
 
+        tools_menu.addSeparator()
+
+        act_polkit = QAction(QIcon.fromTheme("security-high"), "&Passwortlose Aktionen konfigurieren (Polkit)...", self)
+        act_polkit.triggered.connect(self.show_polkit_dialog)
+        tools_menu.addAction(act_polkit)
+
         # Help Menu
         help_menu = menubar.addMenu("&Hilfe")
 
@@ -488,6 +494,11 @@ class MainWindow(QMainWindow):
         btn_box.accepted.connect(dlg.accept)
         layout.addWidget(btn_box)
 
+        dlg.exec()
+
+    def show_polkit_dialog(self):
+        from aur_scanner_gui.dialogs.polkit_dialog import PolkitSetupDialog
+        dlg = PolkitSetupDialog(self)
         dlg.exec()
 
     def show_about_dialog(self):

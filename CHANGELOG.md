@@ -2,6 +2,25 @@
 
 Alle wichtigen Änderungen und Neuerungen an der Cachy Security Suite werden in dieser Datei dokumentiert.
 
+## [1.2.9] - 2026-09-17
+
+### 🔑 Passwortlose Aktionen via Polkit & Sudoers Profile
+- **Optionale Freigabe administrativer Aktionen:**
+  - Neue komfortable Einrichtungsfunktion für Benutzer der Administrator-Gruppe `wheel` (Standard unter CachyOS und Arch Linux).
+  - Sicherheitsrelevante Kernfunktionen können künftig ohne ständige Passwortabfragen ausgeführt werden:
+    - **UFW Firewall:** Ein- und Ausschalten, Profile anwenden, Standard-Richtlinien und Firewall-Regeln verwalten.
+    - **ClamAV Freshclam Service:** Hintergrunddienst starten, stoppen, aktivieren oder deaktivieren.
+    - **Freshclam Signaturen:** Manuelles und automatisiertes Herunterladen aktueller Virensignaturen.
+- **Grafischer Einrichtungsdialog (PolkitSetupDialog):**
+  - Erreichbar im Hauptmenü über **Werkzeuge ➔ Passwortlose Aktionen konfigurieren (Polkit)...**.
+  - Bietet Ein-Klick-Aktivierung („Jetzt einrichten“) sowie vollständige Rückgängigmachung („Regeln entfernen“) mit detaillierter Konsolen- und Statusausgabe.
+- **Systemdateien & Vorlagen:**
+  - Polkit-Regel `/etc/polkit-1/rules.d/49-cachy-security-suite.rules` (bzw. `/usr/share/polkit-1/rules.d/`).
+  - Sudoers-Drop-in `/etc/sudoers.d/99-cachy-security-suite` mit automatischer `visudo`-Validierung.
+  - Automatisches Bereitstellen bei systemweiter Installation (`install.sh` & `PKGBUILD`).
+
+---
+
 ## [1.2.8] - 2026-09-17
 
 ### 🎚️ Schiebeschalter für den Freshclam-Hintergrunddienst

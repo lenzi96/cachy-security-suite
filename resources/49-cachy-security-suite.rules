@@ -1,0 +1,30 @@
+/* ==============================================================================
+ * Polkit Rules for Cachy Security Suite
+ * Enables passwordless management of UFW firewall and Freshclam antivirus service
+ * for administrative users (members of group 'wheel' or 'sudo').
+ * ============================================================================== */
+
+polkit.addRule(function(action, subject) {
+    if (subject.isInGroup("wheel") || subject.isInGroup("sudo")) {
+        // 1. Allow pkexec without password for ufw, freshclam, and systemctl
+        if (action.id === "org.freedesktop.policykit.exec") {
+            var prog = action.lookup("program");
+            if (prog === "/usr/bin/ufw" ||
+                prog === "/usr/bin/freshclam" ||
+                prog === "/usr/bin/systemctl") {
+                return polkit.Result.YES;
+            }
+        }
+
+        // 2. Allow systemd service control for clamav-freshclam and ufw
+        if (action.id === "org.freedesktop.systemd1.manage-units" ||
+            action.id === "org.freedesktop.systemd1.manage-unit-files") {
+            var unit = action.lookup("unit");
+            if (!unit ||
+                unit === "clamav-freshclam.service" || unit === "clamav-freshclam" ||
+                unit === "ufw.service" || unit === "ufw") {
+                return polkit.Result.YES;
+            }
+        }
+    }
+});

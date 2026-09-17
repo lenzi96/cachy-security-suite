@@ -1,0 +1,5 @@
+# ==============================================================================
+# Sudoers drop-in for Cachy Security Suite
+# Allows wheel group members to manage UFW and Freshclam without password
+# ==============================================================================
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/ufw, /usr/bin/systemctl * clamav-freshclam.service, /usr/bin/systemctl * clamav-freshclam, /usr/bin/systemctl * ufw.service, /usr/bin/systemctl * ufw, /usr/bin/freshclam
